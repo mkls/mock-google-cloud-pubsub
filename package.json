@@ -1,0 +1,27 @@
+{
+  "name": "mock-google-cloud-pubsub",
+  "version": "1.0.0",
+  "description": "mock @google-cloud/pubsub package in integration tests",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "jest --watch --bail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mkls/mock-google-cloud-pubsub.git"
+  },
+  "keywords": [
+    "pubsub"
+  ],
+  "author": "mkls",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mkls/mock-google-cloud-pubsub/issues"
+  },
+  "homepage": "https://github.com/mkls/mock-google-cloud-pubsub#readme",
+  "devDependencies": {
+    "@types/jest": "^25.1.3",
+    "delay": "^4.3.0",
+    "jest": "^25.1.0"
+  }
+}
