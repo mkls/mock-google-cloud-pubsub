@@ -61,6 +61,18 @@ it('should distribute message to multiple subscriptions', async () => {
   expect(consumer2.mock.calls).toMatchObject([[{ data: 'test-message' }]]);
 });
 
+it('should remove event listener with removeListener', async () => {
+  initializeMocker({ 'topic-1': ['sub-1'] });
+
+  const consumer = jest.fn();
+  subscription('sub-1').on('message', consumer);
+  subscription('sub-1').removeListener('message', consumer);
+
+  await topic('topic-1').publish('test-message');
+
+  expect(consumer).not.toHaveBeenCalled();
+});
+
 it.todo('should throw error if topic does not exist');
 
 it.todo('should throw error is subscription does not exist');

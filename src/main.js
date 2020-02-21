@@ -61,7 +61,9 @@ const createSubscription = () => {
       pendingMessages = [];
       callbacks.push(callback);
     },
-    removeListener(eventName, callback) {},
+    removeListener(eventName, callback) {
+      callbacks = callbacks.filter(fn => fn !== callback);
+    },
     removeAllListeners(eventName) {
       callbacks = [];
     }
