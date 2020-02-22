@@ -38,6 +38,7 @@ it('should put back nacked messages to queue', async () => {
   expect(consumer.mock.calls).toMatchObject([[{ data: 'test-message-1' }]]);
 
   await delay(6);
+  await delay(0);
   let redeliveredMessage;
   subscription('subscription-1').on('message', message => (redeliveredMessage = message));
   expect(redeliveredMessage).toMatchObject({

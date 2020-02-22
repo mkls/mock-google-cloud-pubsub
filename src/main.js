@@ -33,7 +33,8 @@ const createSubscription = () => {
     data,
     attributes,
     ack() {},
-    nack() {
+    async nack() {
+      await delay(1);
       processMessage(this);
     }
   });
@@ -69,3 +70,5 @@ const createSubscription = () => {
     }
   };
 }
+
+const delay = amount => new Promise(resolve => setTimeout(resolve, amount));
