@@ -56,7 +56,7 @@ const createTopic = (projectId, name) => ({
   },
   async publish(data, attributes) {
     await delay(5);
-    const message = { data, attributes, ack() {}, nack() {} };
+    const message = { data, attributes };
     this._subscriptions.forEach(name => {
       subscriptions[name]._addMessage(message);
     });
@@ -90,7 +90,7 @@ const createSubscription = name => ({
   on(eventName, listener) {
     if (eventName !== 'message') return;
     this._listeners.push(listener);
-    this._undeliveredMessages.forEach(message => this._listeners[0](message));
+    this._undeliveredMessages.forEach(message => pickRandom(this._listeners)(message));
     this._undeliveredMessages = [];
   },
   removeAllListeners() {
@@ -98,10 +98,11 @@ const createSubscription = name => ({
   },
   close() {},
   _addMessage(message) {
+    const messageWithAck = { ...message, ack: () => {}, nack: () => this._addMessage(message) };
     if (this._listeners.length > 0) {
-      this._listeners[0](message);
+      pickRandom(this._listeners)(messageWithAck);
     } else {
-      this._undeliveredMessages.push(message);
+      this._undeliveredMessages.push(messageWithAck);
     }
   }
 });
@@ -119,3 +120,5 @@ const libError = (code, message) => {
 };
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const pickRandom = list => list[Math.floor(Math.random() * list.length)];

@@ -262,6 +262,45 @@ const prefixedName = name => `${prefix}${name}`;
         await wait(100);
         expect(receivedMessages).toEqual([]);
       });
+
+      it('should redeliver a message if it was nacked', async () => {
+        const [topic] = await pubsub.createTopic(prefixedName('t45'));
+        const [subscription] = await topic.createSubscription(prefixedName('s45'));
+
+        const receivedMessages = [];
+        let nackedOnce = false;
+        subscription.on('message', message => {
+          receivedMessages.push(message);
+          if (!nackedOnce) {
+            nackedOnce = true;
+            message.nack();
+          }
+        });
+        await topic.publish(Buffer.from('tm43'));
+
+        await waitForCondition(() => receivedMessages.length == 2);
+        expect(receivedMessages[0].data.toString()).toEqual('tm43');
+        expect(receivedMessages[1].data.toString()).toEqual('tm43');
+        subscription.removeAllListeners('message');
+      });
+
+      it('should call all listeners randomly when more are attached to a single subscription', async () => {
+        const [topic] = await pubsub.createTopic(prefixedName('t34'));
+        const [subscription] = await topic.createSubscription(prefixedName('s34'));
+
+        const receivedMessages1 = [];
+        subscription.on('message', message => receivedMessages1.push(message));
+        const receivedMessages2 = [];
+        subscription.on('message', message => receivedMessages2.push(message));
+
+        for (let i = 0; i < 10; i++) {
+          await topic.publish(Buffer.from('tm435'));
+        }
+
+        expect(receivedMessages1.length).toBeGreaterThan(1);
+        expect(receivedMessages2.length).toBeGreaterThan(1);
+        subscription.removeAllListeners();
+      });
     });
   });
 });
