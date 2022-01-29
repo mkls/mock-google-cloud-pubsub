@@ -98,7 +98,14 @@ const createSubscription = name => ({
   },
   close() {},
   _addMessage(message) {
-    const messageWithAck = { ...message, ack: () => {}, nack: () => this._addMessage(message) };
+    const messageWithAck = {
+      ...message,
+      ack: () => {},
+      nack: async () => {
+        await delay(10);
+        this._addMessage(message);
+      }
+    };
     if (this._listeners.length > 0) {
       pickRandom(this._listeners)(messageWithAck);
     } else {
