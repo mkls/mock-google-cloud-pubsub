@@ -44,6 +44,7 @@ const prefixedName = name => `${prefix}${name}`;
           const [topic] = await pubsub.createTopic(topicName);
 
           expect(topic.name).toEqual(`projects/${projectId}/topics/${topicName}`);
+          expect(typeof topic.setPublishOptions).toEqual('function');
         });
 
         it('should throw error if topic already exists', async () => {
@@ -187,6 +188,21 @@ const prefixedName = name => `${prefix}${name}`;
           }
         });
       });
+
+      describe('topic.subscription', () => {
+        it('should return subscription through a topic object', async () => {
+          const [topic] = await pubsub.createTopic(prefixedName('kacsa'));
+          await topic.createSubscription(prefixedName('nyul'));
+
+          const subscription = pubsub
+            .topic(prefixedName('kacsa'))
+            .subscription(prefixedName('nyul'));
+
+          expect(subscription.name).toEqual(
+            `projects/${projectId}/subscriptions/${prefixedName('nyul')}`
+          );
+        });
+      });
     });
 
     describe('publishing and consuming messagas', () => {
@@ -221,6 +237,31 @@ const prefixedName = name => `${prefix}${name}`;
         expect(receivedMessages[0].data.toString()).toEqual('t45');
         subscription.removeAllListeners('message');
       });
+
+      it('should not receive messages if removeAllListeners was called on subscription', async () => {
+        const [topic] = await pubsub.createTopic(prefixedName('t45'));
+        const [subscription] = await topic.createSubscription(prefixedName('s45'));
+        const receivedMessages = [];
+        subscription.on('message', message => receivedMessages.push(message));
+
+        subscription.removeAllListeners();
+
+        await topic.publish(Buffer.from('t45'));
+        await wait(100);
+        expect(receivedMessages).toEqual([]);
+      });
+
+      it('should only pass messages to "message" event listeners', async () => {
+        const [topic] = await pubsub.createTopic(prefixedName('t45'));
+        const [subscription] = await topic.createSubscription(prefixedName('s45'));
+
+        const receivedMessages = [];
+        subscription.on('error', message => receivedMessages.push(message));
+
+        await topic.publish(Buffer.from('t45'));
+        await wait(100);
+        expect(receivedMessages).toEqual([]);
+      });
     });
   });
 });
@@ -231,7 +272,7 @@ const waitForCondition = async isConditionMet => {
   let waitCount = 0;
   while (waitCount <= maxWaitCount) {
     waitCount += 1;
-    await new Promise(resolve => setTimeout(resolve, maxTimeoutMs / maxWaitCount));
+    await wait(maxTimeoutMs / maxWaitCount);
     const result = await isConditionMet();
     if (result) {
       return result;
@@ -241,3 +282,5 @@ const waitForCondition = async isConditionMet => {
     throw new Error(`Timed out waiting ${maxTimeoutMs}ms for condition ${isConditionMet}`);
   }
 };
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));

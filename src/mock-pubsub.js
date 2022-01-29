@@ -34,10 +34,7 @@ module.exports = class MockPubSub {
   }
 
   subscription(subscriptionName) {
-    const name = subscriptionName.startsWith('projects')
-      ? subscriptionName
-      : `projects/${this.projectId}/subscriptions/${subscriptionName}`;
-    return subscriptions[name] || nonExisitingSubscription;
+    return getSubscriptionObject(this.projectId, subscriptionName);
   }
 };
 
@@ -63,8 +60,19 @@ const createTopic = (projectId, name) => ({
     this._subscriptions.forEach(name => {
       subscriptions[name]._addMessage(message);
     });
+  },
+  setPublishOptions() {},
+  subscription(subscriptionName) {
+    return getSubscriptionObject(projectId, subscriptionName);
   }
 });
+
+const getSubscriptionObject = (projectId, subscriptionName) => {
+  const name = subscriptionName.startsWith('projects')
+    ? subscriptionName
+    : `projects/${projectId}/subscriptions/${subscriptionName}`;
+  return subscriptions[name] || nonExisitingSubscription;
+};
 
 const nonExisitingTopic = {
   async delete() {
@@ -80,11 +88,14 @@ const createSubscription = name => ({
     delete subscriptions[name];
   },
   on(eventName, listener) {
+    if (eventName !== 'message') return;
     this._listeners.push(listener);
     this._undeliveredMessages.forEach(message => this._listeners[0](message));
     this._undeliveredMessages = [];
   },
-  removeAllListeners() {},
+  removeAllListeners() {
+    this._listeners = [];
+  },
   close() {},
   _addMessage(message) {
     if (this._listeners.length > 0) {
