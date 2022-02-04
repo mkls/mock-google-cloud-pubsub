@@ -3,7 +3,7 @@
 const topics = {};
 const subscriptions = {};
 
-module.exports = class MockPubSub {
+exports.PubSub = class PubSub {
   constructor({ projectId }) {
     this.projectId = projectId;
   }
