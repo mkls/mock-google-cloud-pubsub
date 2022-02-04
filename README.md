@@ -15,24 +15,29 @@ to check if more complicated use cases are covered or not.
 
 
 ```js
-const { PubSub } = require('mock-google-cloud-pubsub');
-const pubsub = new PubSub({});
+const { PubSub } = require('mock-google-cloud-pubsub')
+const pubsub = new PubSub({})
 
-const [topic] = await pubsub.createTopic(topicName);
-const [subscription] = await topic.createSubscription(subscriptionName);
+const [topic] = await pubsub.createTopic(topicName)
+const [subscription] = await topic.createSubscription(subscriptionName)
 subscription.on('message', message => {
-  console.log('Received message:', message.data.toString());
-});
-topic.publish(Buffer.from('Test message!'));
+  console.log('Received message:', message.data.toString())
+})
+topic.publish(Buffer.from('Test message!'))
 ```
 
 Pull request for covering more features are welcome, just make sure to write tests for them.
 
 ## Usage
 
-Intead of using the real thing like `const { PubSub } = require('@google-cloud/pubsub')`,
-simply require the emulator module `const { Pubsub } = require('mock-google-cloud-pubsub')` and
-use this instead when running integration tests.
+Intead of using the real thing, simply use the mocked pubsub package whenever you are in integration test.
+
+```js
+const { PubSub } = require('@google-cloud/pubsub')
+const { PubSub: MockPubSub } = require('mock-google-cloud-pubsub')
+
+const pubsub = process.env.NODE_ENV !== 'test' ? new PubSub({ ... }) : new MockPubSub()
+```
 
 ## Changelog
 
