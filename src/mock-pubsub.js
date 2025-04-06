@@ -61,6 +61,22 @@ const createTopic = (projectId, name) => ({
       subscriptions[name]._addMessage(message);
     });
   },
+  async publishMessage(messageOptions) {
+    await delay(5);
+    let message = {}
+
+    if (messageOptions.data){
+      message = { data: messageOptions.data, attributes: messageOptions.attributes };
+    }
+
+    if (messageOptions.json){
+      message = { data: JSON.stringify(messageOptions.json), attributes: messageOptions.attributes };
+    }
+
+    this._subscriptions.forEach(name => {
+      subscriptions[name]._addMessage(message);
+    });
+  },
   setPublishOptions() {},
   subscription(subscriptionName) {
     return getSubscriptionObject(projectId, subscriptionName);

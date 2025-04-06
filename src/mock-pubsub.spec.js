@@ -205,24 +205,66 @@ const prefixedName = name => `${prefix}${name}`;
       });
     });
 
-    describe('publishing and consuming messagas', () => {
-      it('should consume messages published to a topic', async () => {
-        const [topic] = await pubsub.createTopic(prefixedName('t32'));
-        const [subscription] = await topic.createSubscription(prefixedName('s32'));
+    describe('publishing and consuming messages', () => {
+      describe('topic.publish', () => {
+        it('should consume messages published to a topic', async () => {
+          const [topic] = await pubsub.createTopic(prefixedName('t32'));
+          const [subscription] = await topic.createSubscription(prefixedName('s32'));
+  
+          const receivedMessages = [];
+          subscription.on('message', message => receivedMessages.push(message));
+  
+          await topic.publish(Buffer.from('Test message!'), { kacsa: 'hap' });
+  
+          await waitForCondition(() => receivedMessages.length > 0);
+          const message = receivedMessages[0];
+          expect(message.data.toString()).toEqual('Test message!');
+          expect(message.attributes).toEqual({ kacsa: 'hap' });
+          expect(typeof message.ack).toEqual('function');
+          expect(typeof message.nack).toEqual('function');
+          subscription.removeAllListeners('message');
+        });
+      })
 
-        const receivedMessages = [];
-        subscription.on('message', message => receivedMessages.push(message));
+      describe('topic.publishMessage({data})', () => {
+        it('should consume messages published to a topic', async () => {
+          const [topic] = await pubsub.createTopic(prefixedName('t32'));
+          const [subscription] = await topic.createSubscription(prefixedName('s32'));
 
-        await topic.publish(Buffer.from('Test message!'), { kacsa: 'hap' });
+          const receivedMessages = [];
+          subscription.on('message', message => receivedMessages.push(message));
 
-        await waitForCondition(() => receivedMessages.length > 0);
-        const message = receivedMessages[0];
-        expect(message.data.toString()).toEqual('Test message!');
-        expect(message.attributes).toEqual({ kacsa: 'hap' });
-        expect(typeof message.ack).toEqual('function');
-        expect(typeof message.nack).toEqual('function');
-        subscription.removeAllListeners('message');
-      });
+          await topic.publishMessage({ data: Buffer.from('Test message!'), attributes: { kacsa: 'hap' }});
+
+          await waitForCondition(() => receivedMessages.length > 0);
+          const message = receivedMessages[0];
+          expect(message.data.toString()).toEqual('Test message!');
+          expect(message.attributes).toEqual({ kacsa: 'hap' });
+          expect(typeof message.ack).toEqual('function');
+          expect(typeof message.nack).toEqual('function');
+          subscription.removeAllListeners('message');
+        });
+      })
+
+      describe('topic.publishMessage({json})', () => {
+        it('should consume messages published to a topic', async () => {
+          const [topic] = await pubsub.createTopic(prefixedName('t32'));
+          const [subscription] = await topic.createSubscription(prefixedName('s32'));
+
+          const receivedMessages = [];
+          subscription.on('message', message => receivedMessages.push(message));
+
+          await topic.publishMessage({ json: { data: 'Test message!' }, attributes: { kacsa: 'hap' }});
+
+          await waitForCondition(() => receivedMessages.length > 0);
+          const message = receivedMessages[0];
+          expect(JSON.parse(message.data.toString())).toEqual({ data: 'Test message!' });
+          expect(message.attributes).toEqual({ kacsa: 'hap' });
+          expect(typeof message.ack).toEqual('function');
+          expect(typeof message.nack).toEqual('function');
+          subscription.removeAllListeners('message');
+        });
+      })
 
       it('should consume messages that were published before subscription consumption was started', async () => {
         const [topic] = await pubsub.createTopic(prefixedName('t34'));
