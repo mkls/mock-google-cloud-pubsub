@@ -1,10 +1,10 @@
 {
   "name": "mock-google-cloud-pubsub",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "mock @google-cloud/pubsub package in integration tests",
   "main": "src/mock-pubsub.js",
   "scripts": {
-    "test": "jest --testTimeout 60000",
+    "test": "jest --testTimeout 60000 --colors",
     "test:watch": "npm run test -- --watchAll"
   },
   "repository": {

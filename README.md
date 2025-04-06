@@ -13,17 +13,16 @@ Only parts of the official API (https://googleapis.dev/nodejs/pubsub/latest/PubS
 covered with this package. A simple example like the one below would work, but you will have
 to check if more complicated use cases are covered or not.
 
-
 ```js
-const { PubSub } = require('mock-google-cloud-pubsub')
-const pubsub = new PubSub({})
+const { PubSub } = require('mock-google-cloud-pubsub');
+const pubsub = new PubSub({});
 
-const [topic] = await pubsub.createTopic(topicName)
-const [subscription] = await topic.createSubscription(subscriptionName)
-subscription.on('message', message => {
-  console.log('Received message:', message.data.toString())
-})
-topic.publish(Buffer.from('Test message!'))
+const [topic] = await pubsub.createTopic(topicName);
+const [subscription] = await topic.createSubscription(subscriptionName);
+subscription.on('message', (message) => {
+  console.log('Received message:', message.data.toString());
+});
+topic.publish(Buffer.from('Test message!'));
 ```
 
 Pull request for covering more features are welcome, just make sure to write tests for them.
@@ -41,8 +40,13 @@ const pubsub = process.env.NODE_ENV !== 'test' ? new PubSub({ ... }) : new MockP
 
 ## Changelog
 
-- from version 2.0.0 the `initializeMocker` method was removed, now subscriptions and topics can be
-created with the regular api methods.
+### 2.1.0
+
+- partial support for topic.publishMessage
+
+### 2.0.0
+
+- the `initializeMocker` method was removed, now subscriptions and topics can be created with the regular api methods.
 
 ## Local dev
 
