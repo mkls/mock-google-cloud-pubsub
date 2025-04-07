@@ -1,7 +1,4 @@
-'use strict';
-
 require('dotenv-haphap').config('confidential.env');
-
 const waitForExpect = require('wait-for-expect');
 const { PubSub: MockPubSub } = require('../src/mock-pubsub');
 const { PubSub } = require('@google-cloud/pubsub');
@@ -10,6 +7,7 @@ const prefix = process.env.RESOURCE_PREFIX || 'mock-pubsub-prefix-';
 const projectId = process.env.GCP_PROJECT_ID;
 
 const prefixedName = (name) => `${prefix}${name}`;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 [
   {
@@ -412,5 +410,3 @@ const prefixedName = (name) => `${prefix}${name}`;
     });
   });
 });
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
