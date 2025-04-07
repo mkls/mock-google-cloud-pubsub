@@ -13,10 +13,11 @@ const prefixedName = name => `${prefix}${name}`;
 [
   {
     title: 'Real PubSub',
-    pubsub: new PubSub({ projectId, credentials: JSON.parse(process.env.GCP_CREDENTIALS) })
+    pubsub: new PubSub({ projectId, credentials: JSON.parse(process.env.GCP_CREDENTIALS) }),
+    PubSubClass: PubSub
   },
-  { title: 'Mock PubSub', pubsub: new MockPubSub({ projectId }) }
-].forEach(({ title, pubsub }) => {
+  { title: 'Mock PubSub', pubsub: new MockPubSub({ projectId }), PubSubClass: MockPubSub }
+].forEach(({ title, pubsub, PubSubClass }) => {
   describe(title, () => {
     const getPrefixedTopics = async () => {
       const [topics] = await pubsub.getTopics();
@@ -35,6 +36,13 @@ const prefixedName = name => `${prefix}${name}`;
         await subscription.delete();
       }
     });
+
+    describe('no PubSub constructor options', () => {
+      it('initializes pub sub with projectId === "{{projectId}}"', async () => {
+        const pubsub = new PubSubClass()
+        expect(pubsub.projectId).toBe('{{projectId}}')
+      })
+    })
 
     describe('creating, listing and deleting topics and subscriptions', () => {
       describe('createTopic', () => {

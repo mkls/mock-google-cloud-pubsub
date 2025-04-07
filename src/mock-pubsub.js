@@ -4,7 +4,7 @@ const topics = {};
 const subscriptions = {};
 
 exports.PubSub = class PubSub {
-  constructor({ projectId = 'mock-project-id' } = {}) {
+  constructor({ projectId = '{{projectId}}' } = {}) {
     this.projectId = projectId;
   }
 
