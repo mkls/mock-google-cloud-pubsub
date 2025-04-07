@@ -8,23 +8,28 @@ const { PubSub } = require('@google-cloud/pubsub');
 const prefix = process.env.RESOURCE_PREFIX || 'mock-pubsub-prefix-';
 const projectId = process.env.GCP_PROJECT_ID;
 
-const prefixedName = name => `${prefix}${name}`;
+const prefixedName = (name) => `${prefix}${name}`;
 
 [
   {
     title: 'Real PubSub',
-    pubsub: new PubSub({ projectId, credentials: JSON.parse(process.env.GCP_CREDENTIALS) })
+    pubsub: new PubSub({
+      projectId,
+      credentials: JSON.parse(process.env.GCP_CREDENTIALS),
+    }),
   },
-  { title: 'Mock PubSub', pubsub: new MockPubSub({ projectId }) }
+  { title: 'Mock PubSub', pubsub: new MockPubSub({ projectId }) },
 ].forEach(({ title, pubsub }) => {
   describe(title, () => {
     const getPrefixedTopics = async () => {
       const [topics] = await pubsub.getTopics();
-      return topics.filter(topic => topic.name.includes(`topics/${prefix}`));
+      return topics.filter((topic) => topic.name.includes(`topics/${prefix}`));
     };
     const getPrefixedSubscriptions = async () => {
       const [subscriptions] = await pubsub.getSubscriptions();
-      return subscriptions.filter(topic => topic.name.includes(`subscriptions/${prefix}`));
+      return subscriptions.filter((topic) =>
+        topic.name.includes(`subscriptions/${prefix}`),
+      );
     };
 
     beforeEach(async () => {
@@ -43,7 +48,9 @@ const prefixedName = name => `${prefix}${name}`;
 
           const [topic] = await pubsub.createTopic(topicName);
 
-          expect(topic.name).toEqual(`projects/${projectId}/topics/${topicName}`);
+          expect(topic.name).toEqual(
+            `projects/${projectId}/topics/${topicName}`,
+          );
           expect(typeof topic.setPublishOptions).toEqual('function');
         });
 
@@ -55,7 +62,9 @@ const prefixedName = name => `${prefix}${name}`;
             await pubsub.createTopic(topicName);
             throw new Error('should throw before');
           } catch (error) {
-            expect(error.message).toEqual('6 ALREADY_EXISTS: Topic already exists');
+            expect(error.message).toEqual(
+              '6 ALREADY_EXISTS: Topic already exists',
+            );
             expect(error.code).toEqual(6);
           }
         });
@@ -65,15 +74,17 @@ const prefixedName = name => `${prefix}${name}`;
         it('should return exisiting topics', async () => {
           await Promise.all([
             pubsub.createTopic(prefixedName('t1')),
-            pubsub.createTopic(prefixedName('t2'))
+            pubsub.createTopic(prefixedName('t2')),
           ]);
 
           const [topics] = await pubsub.getTopics();
 
-          const topicNames = topics.map(t => t.name).filter(name => name.includes(prefix));
+          const topicNames = topics
+            .map((t) => t.name)
+            .filter((name) => name.includes(prefix));
           expect(topicNames).toEqual([
             `projects/${projectId}/topics/${prefixedName('t1')}`,
-            `projects/${projectId}/topics/${prefixedName('t2')}`
+            `projects/${projectId}/topics/${prefixedName('t2')}`,
           ]);
         });
       });
@@ -82,21 +93,23 @@ const prefixedName = name => `${prefix}${name}`;
         it('should delete a topic', async () => {
           await Promise.all([
             pubsub.createTopic(prefixedName('t1')),
-            pubsub.createTopic(prefixedName('t2'))
+            pubsub.createTopic(prefixedName('t2')),
           ]);
 
           await pubsub.topic(prefixedName('t1')).delete();
 
           const topics = await getPrefixedTopics();
-          expect(topics.map(t => t.name)).toEqual([
-            `projects/${projectId}/topics/${prefixedName('t2')}`
+          expect(topics.map((t) => t.name)).toEqual([
+            `projects/${projectId}/topics/${prefixedName('t2')}`,
           ]);
         });
 
         it('should delete topic by its full name', async () => {
           await pubsub.createTopic(prefixedName('tod'));
 
-          await pubsub.topic(`projects/${projectId}/topics/${prefixedName('tod')}`).delete();
+          await pubsub
+            .topic(`projects/${projectId}/topics/${prefixedName('tod')}`)
+            .delete();
 
           const topics = await getPrefixedTopics();
           expect(topics).toEqual([]);
@@ -116,10 +129,12 @@ const prefixedName = name => `${prefix}${name}`;
       describe('topic.createSubscription', () => {
         it('should create a subscription', async () => {
           const [topic] = await pubsub.createTopic(prefixedName('ted'));
-          const [subscription] = await topic.createSubscription(prefixedName('ted'));
+          const [subscription] = await topic.createSubscription(
+            prefixedName('ted'),
+          );
 
           expect(subscription.name).toEqual(
-            `projects/${projectId}/subscriptions/${prefixedName('ted')}`
+            `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
           );
         });
 
@@ -131,7 +146,9 @@ const prefixedName = name => `${prefix}${name}`;
             await topic.createSubscription(prefixedName('lajos'));
             throw new Error('should throw before');
           } catch (error) {
-            expect(error.message).toEqual('6 ALREADY_EXISTS: Subscription already exists');
+            expect(error.message).toEqual(
+              '6 ALREADY_EXISTS: Subscription already exists',
+            );
             expect(error.code).toEqual(6);
           }
         });
@@ -145,10 +162,12 @@ const prefixedName = name => `${prefix}${name}`;
 
           const [subscriptions] = await pubsub.getSubscriptions();
 
-          const subNames = subscriptions.map(s => s.name).filter(name => name.includes(prefix));
+          const subNames = subscriptions
+            .map((s) => s.name)
+            .filter((name) => name.includes(prefix));
           expect(subNames).toEqual([
             `projects/${projectId}/subscriptions/${prefixedName('l1')}`,
-            `projects/${projectId}/subscriptions/${prefixedName('l2')}`
+            `projects/${projectId}/subscriptions/${prefixedName('l2')}`,
           ]);
         });
       });
@@ -162,8 +181,8 @@ const prefixedName = name => `${prefix}${name}`;
           await pubsub.subscription(prefixedName('l1')).delete();
 
           const subscriptions = await getPrefixedSubscriptions();
-          expect(subscriptions.map(s => s.name)).toEqual([
-            `projects/${projectId}/subscriptions/${prefixedName('l2')}`
+          expect(subscriptions.map((s) => s.name)).toEqual([
+            `projects/${projectId}/subscriptions/${prefixedName('l2')}`,
           ]);
         });
 
@@ -172,7 +191,9 @@ const prefixedName = name => `${prefix}${name}`;
           await topic.createSubscription(prefixedName('l1'));
 
           await pubsub
-            .subscription(`projects/${projectId}/subscriptions/${prefixedName('l1')}`)
+            .subscription(
+              `projects/${projectId}/subscriptions/${prefixedName('l1')}`,
+            )
             .delete();
 
           expect(await getPrefixedSubscriptions()).toEqual([]);
@@ -183,7 +204,9 @@ const prefixedName = name => `${prefix}${name}`;
             await pubsub.subscription(prefixedName('non-let')).delete();
             throw new Error('should throw before');
           } catch (error) {
-            expect(error.message).toEqual('5 NOT_FOUND: Subscription does not exist');
+            expect(error.message).toEqual(
+              '5 NOT_FOUND: Subscription does not exist',
+            );
             expect(error.code).toEqual(5);
           }
         });
@@ -199,7 +222,7 @@ const prefixedName = name => `${prefix}${name}`;
             .subscription(prefixedName('nyul'));
 
           expect(subscription.name).toEqual(
-            `projects/${projectId}/subscriptions/${prefixedName('nyul')}`
+            `projects/${projectId}/subscriptions/${prefixedName('nyul')}`,
           );
         });
       });
@@ -209,13 +232,17 @@ const prefixedName = name => `${prefix}${name}`;
       describe('topic.publish', () => {
         it('should consume messages published to a topic', async () => {
           const [topic] = await pubsub.createTopic(prefixedName('t32'));
-          const [subscription] = await topic.createSubscription(prefixedName('s32'));
-  
+          const [subscription] = await topic.createSubscription(
+            prefixedName('s32'),
+          );
+
           const receivedMessages = [];
-          subscription.on('message', message => receivedMessages.push(message));
-  
+          subscription.on('message', (message) =>
+            receivedMessages.push(message),
+          );
+
           await topic.publish(Buffer.from('Test message!'), { kacsa: 'hap' });
-  
+
           await waitForCondition(() => receivedMessages.length > 0);
           const message = receivedMessages[0];
           expect(message.data.toString()).toEqual('Test message!');
@@ -224,17 +251,24 @@ const prefixedName = name => `${prefix}${name}`;
           expect(typeof message.nack).toEqual('function');
           subscription.removeAllListeners('message');
         });
-      })
+      });
 
       describe('topic.publishMessage({data})', () => {
         it('should consume messages published to a topic', async () => {
           const [topic] = await pubsub.createTopic(prefixedName('t32'));
-          const [subscription] = await topic.createSubscription(prefixedName('s32'));
+          const [subscription] = await topic.createSubscription(
+            prefixedName('s32'),
+          );
 
           const receivedMessages = [];
-          subscription.on('message', message => receivedMessages.push(message));
+          subscription.on('message', (message) =>
+            receivedMessages.push(message),
+          );
 
-          await topic.publishMessage({ data: Buffer.from('Test message!'), attributes: { kacsa: 'hap' }});
+          await topic.publishMessage({
+            data: Buffer.from('Test message!'),
+            attributes: { kacsa: 'hap' },
+          });
 
           await waitForCondition(() => receivedMessages.length > 0);
           const message = receivedMessages[0];
@@ -244,36 +278,47 @@ const prefixedName = name => `${prefix}${name}`;
           expect(typeof message.nack).toEqual('function');
           subscription.removeAllListeners('message');
         });
-      })
+      });
 
       describe('topic.publishMessage({json})', () => {
         it('should consume messages published to a topic', async () => {
           const [topic] = await pubsub.createTopic(prefixedName('t32'));
-          const [subscription] = await topic.createSubscription(prefixedName('s32'));
+          const [subscription] = await topic.createSubscription(
+            prefixedName('s32'),
+          );
 
           const receivedMessages = [];
-          subscription.on('message', message => receivedMessages.push(message));
+          subscription.on('message', (message) =>
+            receivedMessages.push(message),
+          );
 
-          await topic.publishMessage({ json: { data: 'Test message!' }, attributes: { kacsa: 'hap' }});
+          await topic.publishMessage({
+            json: { data: 'Test message!' },
+            attributes: { kacsa: 'hap' },
+          });
 
           await waitForCondition(() => receivedMessages.length > 0);
           const message = receivedMessages[0];
-          expect(JSON.parse(message.data.toString())).toEqual({ data: 'Test message!' });
+          expect(JSON.parse(message.data.toString())).toEqual({
+            data: 'Test message!',
+          });
           expect(message.attributes).toEqual({ kacsa: 'hap' });
           expect(typeof message.ack).toEqual('function');
           expect(typeof message.nack).toEqual('function');
           subscription.removeAllListeners('message');
         });
-      })
+      });
 
       it('should consume messages that were published before subscription consumption was started', async () => {
         const [topic] = await pubsub.createTopic(prefixedName('t34'));
-        const [subscription] = await topic.createSubscription(prefixedName('s34'));
+        const [subscription] = await topic.createSubscription(
+          prefixedName('s34'),
+        );
 
         await topic.publish(Buffer.from('t45'));
 
         const receivedMessages = [];
-        subscription.on('message', message => receivedMessages.push(message));
+        subscription.on('message', (message) => receivedMessages.push(message));
 
         await waitForCondition(() => receivedMessages.length > 0);
         expect(receivedMessages[0].data.toString()).toEqual('t45');
@@ -282,9 +327,11 @@ const prefixedName = name => `${prefix}${name}`;
 
       it('should not receive messages if removeAllListeners was called on subscription', async () => {
         const [topic] = await pubsub.createTopic(prefixedName('t45'));
-        const [subscription] = await topic.createSubscription(prefixedName('s45'));
+        const [subscription] = await topic.createSubscription(
+          prefixedName('s45'),
+        );
         const receivedMessages = [];
-        subscription.on('message', message => receivedMessages.push(message));
+        subscription.on('message', (message) => receivedMessages.push(message));
 
         subscription.removeAllListeners();
 
@@ -295,10 +342,12 @@ const prefixedName = name => `${prefix}${name}`;
 
       it('should only pass messages to "message" event listeners', async () => {
         const [topic] = await pubsub.createTopic(prefixedName('t45'));
-        const [subscription] = await topic.createSubscription(prefixedName('s45'));
+        const [subscription] = await topic.createSubscription(
+          prefixedName('s45'),
+        );
 
         const receivedMessages = [];
-        subscription.on('error', message => receivedMessages.push(message));
+        subscription.on('error', (message) => receivedMessages.push(message));
 
         await topic.publish(Buffer.from('t45'));
         await wait(100);
@@ -307,11 +356,13 @@ const prefixedName = name => `${prefix}${name}`;
 
       it('should redeliver a message if it was nacked', async () => {
         const [topic] = await pubsub.createTopic(prefixedName('t45'));
-        const [subscription] = await topic.createSubscription(prefixedName('s45'));
+        const [subscription] = await topic.createSubscription(
+          prefixedName('s45'),
+        );
 
         const receivedMessages = [];
         let nackedOnce = false;
-        subscription.on('message', message => {
+        subscription.on('message', (message) => {
           receivedMessages.push(message);
           if (!nackedOnce) {
             nackedOnce = true;
@@ -328,12 +379,18 @@ const prefixedName = name => `${prefix}${name}`;
 
       it('should call all listeners randomly when more are attached to a single subscription', async () => {
         const [topic] = await pubsub.createTopic(prefixedName('t34'));
-        const [subscription] = await topic.createSubscription(prefixedName('s34'));
+        const [subscription] = await topic.createSubscription(
+          prefixedName('s34'),
+        );
 
         const receivedMessages1 = [];
-        subscription.on('message', message => receivedMessages1.push(message));
+        subscription.on('message', (message) =>
+          receivedMessages1.push(message),
+        );
         const receivedMessages2 = [];
-        subscription.on('message', message => receivedMessages2.push(message));
+        subscription.on('message', (message) =>
+          receivedMessages2.push(message),
+        );
 
         for (let i = 0; i < 10; i++) {
           await topic.publish(Buffer.from('tm435'));
@@ -347,7 +404,7 @@ const prefixedName = name => `${prefix}${name}`;
   });
 });
 
-const waitForCondition = async isConditionMet => {
+const waitForCondition = async (isConditionMet) => {
   const maxTimeoutMs = 5000;
   const maxWaitCount = 500;
   let waitCount = 0;
@@ -360,8 +417,10 @@ const waitForCondition = async isConditionMet => {
     }
   }
   if (waitCount > maxWaitCount) {
-    throw new Error(`Timed out waiting ${maxTimeoutMs}ms for condition ${isConditionMet}`);
+    throw new Error(
+      `Timed out waiting ${maxTimeoutMs}ms for condition ${isConditionMet}`,
+    );
   }
 };
 
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

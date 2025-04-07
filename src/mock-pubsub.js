@@ -57,30 +57,36 @@ const createTopic = (projectId, name) => ({
   async publish(data, attributes) {
     await delay(5);
     const message = { data, attributes };
-    this._subscriptions.forEach(name => {
+    this._subscriptions.forEach((name) => {
       subscriptions[name]._addMessage(message);
     });
   },
   async publishMessage(messageOptions) {
     await delay(5);
-    let message = {}
+    let message = {};
 
-    if (messageOptions.data){
-      message = { data: messageOptions.data, attributes: messageOptions.attributes };
+    if (messageOptions.data) {
+      message = {
+        data: messageOptions.data,
+        attributes: messageOptions.attributes,
+      };
     }
 
-    if (messageOptions.json){
-      message = { data: JSON.stringify(messageOptions.json), attributes: messageOptions.attributes };
+    if (messageOptions.json) {
+      message = {
+        data: JSON.stringify(messageOptions.json),
+        attributes: messageOptions.attributes,
+      };
     }
 
-    this._subscriptions.forEach(name => {
+    this._subscriptions.forEach((name) => {
       subscriptions[name]._addMessage(message);
     });
   },
   setPublishOptions() {},
   subscription(subscriptionName) {
     return getSubscriptionObject(projectId, subscriptionName);
-  }
+  },
 });
 
 const getSubscriptionObject = (projectId, subscriptionName) => {
@@ -93,10 +99,10 @@ const getSubscriptionObject = (projectId, subscriptionName) => {
 const nonExisitingTopic = {
   async delete() {
     throw libError(5, 'NOT_FOUND: Topic not found');
-  }
+  },
 };
 
-const createSubscription = name => ({
+const createSubscription = (name) => ({
   name,
   _listeners: [],
   _undeliveredMessages: [],
@@ -106,7 +112,9 @@ const createSubscription = name => ({
   on(eventName, listener) {
     if (eventName !== 'message') return;
     this._listeners.push(listener);
-    this._undeliveredMessages.forEach(message => pickRandom(this._listeners)(message));
+    this._undeliveredMessages.forEach((message) =>
+      pickRandom(this._listeners)(message),
+    );
     this._undeliveredMessages = [];
   },
   removeAllListeners() {
@@ -120,20 +128,20 @@ const createSubscription = name => ({
       nack: async () => {
         await delay(10);
         this._addMessage(message);
-      }
+      },
     };
     if (this._listeners.length > 0) {
       pickRandom(this._listeners)(messageWithAck);
     } else {
       this._undeliveredMessages.push(messageWithAck);
     }
-  }
+  },
 });
 
 const nonExisitingSubscription = {
   async delete() {
     throw libError(5, 'NOT_FOUND: Subscription does not exist');
-  }
+  },
 };
 
 const libError = (code, message) => {
@@ -142,6 +150,6 @@ const libError = (code, message) => {
   return error;
 };
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const pickRandom = list => list[Math.floor(Math.random() * list.length)];
+const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
