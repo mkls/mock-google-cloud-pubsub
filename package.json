@@ -6,7 +6,6 @@
   "scripts": {
     "test": "jest .",
     "test:watch": "npm run test -- --watchAll",
-    "prepare": "npm run prettier:check && npm run test",
     "prettier:check": "prettier . --check",
     "prettier:fix": "npm run prettier:check -- --write"
   },
