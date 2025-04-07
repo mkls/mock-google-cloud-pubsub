@@ -2,7 +2,7 @@
 
 require('dotenv-haphap').config('confidential.env');
 
-const { PubSub: MockPubSub } = require('./mock-pubsub');
+const { PubSub: MockPubSub } = require('../src/mock-pubsub');
 const { PubSub } = require('@google-cloud/pubsub');
 
 const prefix = process.env.RESOURCE_PREFIX || 'mock-pubsub-prefix-';
