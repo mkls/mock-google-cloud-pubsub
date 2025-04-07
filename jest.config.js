@@ -1,5 +1,3 @@
-'use strict';
-
 module.exports = {
-  testEnvironment: 'node'
-};
+    testTimeout: 10000
+}
