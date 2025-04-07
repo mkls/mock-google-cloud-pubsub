@@ -1,5 +1,9 @@
 # mock-google-cloud-pubsub
 
+[![Build Status][ci-badge]][ci]
+[![Npm version][npm-version-badge]][npm]
+[![Coveralls][coveralls-badge]][coveralls]
+
 The goal of this project is to create an in memory emulator for Google Cloud Pub/Sub so this module
 can be used interchangeably with `@google-cloud/pubsub` in integration tests for faster test execution.
 
@@ -65,3 +69,10 @@ You can use the docker pubsub emulator instead of the real pubsub:
 - in `confidential.env` set `GCP_PROJECT_ID=mock-gcp-project` and `PUBSUB_EMULATOR_HOST=localhost:8685`
 
 Run tests with `npm t` or `npm run test:watch` for watch mode.
+
+[ci-badge]: https://github.com/mkls/mock-google-cloud-pubsub/actions/workflows/ci.yml/badge.svg
+[ci]: https://github.com/mkls/mock-google-cloud-pubsub/actions/workflows/ci.yml
+[coveralls-badge]: https://coveralls.io/repos/github/mkls/mock-google-cloud-pubsub/badge.svg?branch=master
+[coveralls]: https://coveralls.io/github/mkls/mock-google-cloud-pubsub?branch=master
+[npm]: https://www.npmjs.com/package/mock-google-cloud-pubsub
+[npm-version-badge]: https://img.shields.io/npm/v/mock-google-cloud-pubsub.svg
