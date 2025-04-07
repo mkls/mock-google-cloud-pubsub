@@ -46,6 +46,13 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       await clearPubSubInstance(pubsub);
     });
 
+    describe('no constructor options', () => {
+      it('initializes pub sub with projectId === "{{projectId}}"', async () => {
+        const pubsub = new PubSubClass();
+        expect(pubsub.projectId).toBe('{{projectId}}');
+      });
+    });
+
     describe('creating, listing and deleting topics and subscriptions', () => {
       describe('createTopic', () => {
         describe('with name', () => {
