@@ -1,20 +1,21 @@
 require('dotenv-haphap').config('confidential.env');
-const waitForExpect = require('wait-for-expect');
-const { PubSub: MockPubSub } = require('../src/mock-pubsub');
-const { PubSub } = require('@google-cloud/pubsub');
+import waitForExpect from 'wait-for-expect';
+import { PubSub, type Message } from '@google-cloud/pubsub';
+import { PubSub as MockPubSub } from '../src/mock-pubsub';
 
 const prefix = process.env.RESOURCE_PREFIX || 'mock-pubsub-prefix-';
 const projectId = process.env.GCP_PROJECT_ID;
+const gcpCredential = process.env.gcpCredential || '{}';
 
-const prefixedName = (name) => `${prefix}${name}`;
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const prefixedName = (name: string) => `${prefix}${name}`;
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 [
   {
     title: 'Real PubSub',
     pubsub: new PubSub({
       projectId,
-      credentials: JSON.parse(process.env.GCP_CREDENTIALS),
+      credentials: JSON.parse(gcpCredential),
     }),
   },
   { title: 'Mock PubSub', pubsub: new MockPubSub({ projectId }) },
@@ -61,9 +62,11 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             await pubsub.createTopic(topicName);
             throw new Error('should throw before');
           } catch (error) {
+            // @ts-expect-error error expected
             expect(error.message).toEqual(
               '6 ALREADY_EXISTS: Topic already exists',
             );
+            // @ts-expect-error error expected
             expect(error.code).toEqual(6);
           }
         });
@@ -119,7 +122,9 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             await pubsub.topic(prefixedName('non-let')).delete();
             throw new Error('should throw before');
           } catch (error) {
+            // @ts-expect-error error expected
             expect(error.message).toEqual('5 NOT_FOUND: Topic not found');
+            // @ts-expect-error error expected
             expect(error.code).toEqual(5);
           }
         });
@@ -145,9 +150,11 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             await topic.createSubscription(prefixedName('lajos'));
             throw new Error('should throw before');
           } catch (error) {
+            // @ts-expect-error error expected
             expect(error.message).toEqual(
               '6 ALREADY_EXISTS: Subscription already exists',
             );
+            // @ts-expect-error error expected
             expect(error.code).toEqual(6);
           }
         });
@@ -203,9 +210,11 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             await pubsub.subscription(prefixedName('non-let')).delete();
             throw new Error('should throw before');
           } catch (error) {
+            // @ts-expect-error error expected
             expect(error.message).toEqual(
               '5 NOT_FOUND: Subscription does not exist',
             );
+            // @ts-expect-error error expected
             expect(error.code).toEqual(5);
           }
         });
@@ -235,7 +244,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             prefixedName('s32'),
           );
 
-          const receivedMessages = [];
+          const receivedMessages: Message[] = [];
           subscription.on('message', (message) =>
             receivedMessages.push(message),
           );
@@ -246,22 +255,24 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             expect(receivedMessages.length).toBeGreaterThan(0),
           );
           const message = receivedMessages[0];
-          expect(message.data.toString()).toEqual('Test message!');
-          expect(message.attributes).toEqual({ kacsa: 'hap' });
-          expect(typeof message.ack).toEqual('function');
-          expect(typeof message.nack).toEqual('function');
+
+          expect(message).toBeDefined();
+          expect(message?.data.toString()).toEqual('Test message!');
+          expect(message?.attributes).toEqual({ kacsa: 'hap' });
+          expect(typeof message?.ack).toEqual('function');
+          expect(typeof message?.nack).toEqual('function');
           subscription.removeAllListeners('message');
         });
       });
 
-      describe('topic.publishMessage({data})', () => {
+      describe('topic.publishMessage({data: Buffer})', () => {
         it('should consume messages published to a topic', async () => {
           const [topic] = await pubsub.createTopic(prefixedName('t32'));
           const [subscription] = await topic.createSubscription(
             prefixedName('s32'),
           );
 
-          const receivedMessages = [];
+          const receivedMessages: Message[] = [];
           subscription.on('message', (message) =>
             receivedMessages.push(message),
           );
@@ -275,22 +286,24 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             expect(receivedMessages.length).toBeGreaterThan(0),
           );
           const message = receivedMessages[0];
-          expect(message.data.toString()).toEqual('Test message!');
-          expect(message.attributes).toEqual({ kacsa: 'hap' });
-          expect(typeof message.ack).toEqual('function');
-          expect(typeof message.nack).toEqual('function');
+
+          expect(message).toBeDefined();
+          expect(message?.data.toString()).toEqual('Test message!');
+          expect(message?.attributes).toEqual({ kacsa: 'hap' });
+          expect(typeof message?.ack).toEqual('function');
+          expect(typeof message?.nack).toEqual('function');
           subscription.removeAllListeners('message');
         });
       });
 
-      describe('topic.publishMessage({json})', () => {
+      describe('topic.publishMessage({json: String})', () => {
         it('should consume messages published to a topic', async () => {
           const [topic] = await pubsub.createTopic(prefixedName('t32'));
           const [subscription] = await topic.createSubscription(
             prefixedName('s32'),
           );
 
-          const receivedMessages = [];
+          const receivedMessages: Message[] = [];
           subscription.on('message', (message) =>
             receivedMessages.push(message),
           );
@@ -304,12 +317,15 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             expect(receivedMessages.length).toBeGreaterThan(0),
           );
           const message = receivedMessages[0];
-          expect(JSON.parse(message.data.toString())).toEqual({
+
+          expect(message).toBeDefined();
+          // @ts-expect-error JSON parse will fail in case of undefined
+          expect(JSON.parse(message?.data.toString())).toEqual({
             data: 'Test message!',
           });
-          expect(message.attributes).toEqual({ kacsa: 'hap' });
-          expect(typeof message.ack).toEqual('function');
-          expect(typeof message.nack).toEqual('function');
+          expect(message?.attributes).toEqual({ kacsa: 'hap' });
+          expect(typeof message?.ack).toEqual('function');
+          expect(typeof message?.nack).toEqual('function');
           subscription.removeAllListeners('message');
         });
       });
@@ -322,13 +338,13 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
         await topic.publish(Buffer.from('t45'));
 
-        const receivedMessages = [];
+        const receivedMessages: Message[] = [];
         subscription.on('message', (message) => receivedMessages.push(message));
 
         await waitForExpect(() =>
           expect(receivedMessages.length).toBeGreaterThan(0),
         );
-        expect(receivedMessages[0].data.toString()).toEqual('t45');
+        expect(receivedMessages[0]?.data.toString()).toEqual('t45');
         subscription.removeAllListeners('message');
       });
 
@@ -337,7 +353,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         const [subscription] = await topic.createSubscription(
           prefixedName('s45'),
         );
-        const receivedMessages = [];
+        const receivedMessages: Message[] = [];
         subscription.on('message', (message) => receivedMessages.push(message));
 
         subscription.removeAllListeners();
@@ -353,7 +369,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
           prefixedName('s45'),
         );
 
-        const receivedMessages = [];
+        const receivedMessages: unknown[] = [];
         subscription.on('error', (message) => receivedMessages.push(message));
 
         await topic.publish(Buffer.from('t45'));
@@ -367,7 +383,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
           prefixedName('s45'),
         );
 
-        const receivedMessages = [];
+        const receivedMessages: Message[] = [];
         let nackedOnce = false;
         subscription.on('message', (message) => {
           receivedMessages.push(message);
@@ -379,8 +395,8 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         await topic.publish(Buffer.from('tm43'));
 
         await waitForExpect(() => expect(receivedMessages.length).toBe(2));
-        expect(receivedMessages[0].data.toString()).toEqual('tm43');
-        expect(receivedMessages[1].data.toString()).toEqual('tm43');
+        expect(receivedMessages[0]?.data.toString()).toEqual('tm43');
+        expect(receivedMessages[1]?.data.toString()).toEqual('tm43');
         subscription.removeAllListeners('message');
       });
 

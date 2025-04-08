@@ -2,10 +2,15 @@
   "name": "mock-google-cloud-pubsub",
   "version": "2.1.0",
   "description": "mock @google-cloud/pubsub package in integration tests",
-  "main": "src/mock-pubsub.js",
+  "main": "dist/mock-pubsub.js",
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "rimraf ./dist && tsc -p tsconfig.build.json",
     "test": "jest .",
     "test:watch": "npm run test -- --watchAll",
+    "type:check": "tsc --noEmit",
     "prettier:check": "prettier . --check",
     "prettier:fix": "npm run prettier:check -- --write"
   },
@@ -24,10 +29,16 @@
   "homepage": "https://github.com/mkls/mock-google-cloud-pubsub#readme",
   "devDependencies": {
     "@google-cloud/pubsub": "^4.11.0",
+    "@jest/types": "^29.6.3",
+    "@tsconfig/node18": "^18.2.4",
     "@types/jest": "^29.5.14",
     "dotenv-haphap": "^3.1.0",
     "jest": "^29.7.0",
     "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
     "wait-for-expect": "^3.0.2"
   }
 }

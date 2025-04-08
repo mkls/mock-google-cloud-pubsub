@@ -19,11 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run docker compose
-        uses: hoverkraft-tech/compose-action@v2.0.1
-        with:
-          compose-file: './docker-compose.yml'
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -32,6 +27,17 @@ jobs:
 
       - name: Check code format
         run: npm run prettier:check
+
+      - name: Type check
+        run: npm run type:check
+
+      - name: Build
+        run: npm run build
+
+      - name: Run docker compose
+        uses: hoverkraft-tech/compose-action@v2.0.1
+        with:
+          compose-file: './docker-compose.yml'
 
       - name: Run unit tests
         run: npm run test
