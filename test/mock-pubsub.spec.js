@@ -1,7 +1,5 @@
-'use strict';
-
 require('dotenv-haphap').config('confidential.env');
-
+const waitForExpect = require('wait-for-expect');
 const { PubSub: MockPubSub } = require('../src/mock-pubsub');
 const { PubSub } = require('@google-cloud/pubsub');
 
@@ -9,6 +7,7 @@ const prefix = process.env.RESOURCE_PREFIX || 'mock-pubsub-prefix-';
 const projectId = process.env.GCP_PROJECT_ID;
 
 const prefixedName = (name) => `${prefix}${name}`;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 [
   {
@@ -243,7 +242,9 @@ const prefixedName = (name) => `${prefix}${name}`;
 
           await topic.publish(Buffer.from('Test message!'), { kacsa: 'hap' });
 
-          await waitForCondition(() => receivedMessages.length > 0);
+          await waitForExpect(() =>
+            expect(receivedMessages.length).toBeGreaterThan(0),
+          );
           const message = receivedMessages[0];
           expect(message.data.toString()).toEqual('Test message!');
           expect(message.attributes).toEqual({ kacsa: 'hap' });
@@ -270,7 +271,9 @@ const prefixedName = (name) => `${prefix}${name}`;
             attributes: { kacsa: 'hap' },
           });
 
-          await waitForCondition(() => receivedMessages.length > 0);
+          await waitForExpect(() =>
+            expect(receivedMessages.length).toBeGreaterThan(0),
+          );
           const message = receivedMessages[0];
           expect(message.data.toString()).toEqual('Test message!');
           expect(message.attributes).toEqual({ kacsa: 'hap' });
@@ -297,7 +300,9 @@ const prefixedName = (name) => `${prefix}${name}`;
             attributes: { kacsa: 'hap' },
           });
 
-          await waitForCondition(() => receivedMessages.length > 0);
+          await waitForExpect(() =>
+            expect(receivedMessages.length).toBeGreaterThan(0),
+          );
           const message = receivedMessages[0];
           expect(JSON.parse(message.data.toString())).toEqual({
             data: 'Test message!',
@@ -320,7 +325,9 @@ const prefixedName = (name) => `${prefix}${name}`;
         const receivedMessages = [];
         subscription.on('message', (message) => receivedMessages.push(message));
 
-        await waitForCondition(() => receivedMessages.length > 0);
+        await waitForExpect(() =>
+          expect(receivedMessages.length).toBeGreaterThan(0),
+        );
         expect(receivedMessages[0].data.toString()).toEqual('t45');
         subscription.removeAllListeners('message');
       });
@@ -371,7 +378,7 @@ const prefixedName = (name) => `${prefix}${name}`;
         });
         await topic.publish(Buffer.from('tm43'));
 
-        await waitForCondition(() => receivedMessages.length == 2);
+        await waitForExpect(() => expect(receivedMessages.length).toBe(2));
         expect(receivedMessages[0].data.toString()).toEqual('tm43');
         expect(receivedMessages[1].data.toString()).toEqual('tm43');
         subscription.removeAllListeners('message');
@@ -403,24 +410,3 @@ const prefixedName = (name) => `${prefix}${name}`;
     });
   });
 });
-
-const waitForCondition = async (isConditionMet) => {
-  const maxTimeoutMs = 5000;
-  const maxWaitCount = 500;
-  let waitCount = 0;
-  while (waitCount <= maxWaitCount) {
-    waitCount += 1;
-    await wait(maxTimeoutMs / maxWaitCount);
-    const result = await isConditionMet();
-    if (result) {
-      return result;
-    }
-  }
-  if (waitCount > maxWaitCount) {
-    throw new Error(
-      `Timed out waiting ${maxTimeoutMs}ms for condition ${isConditionMet}`,
-    );
-  }
-};
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

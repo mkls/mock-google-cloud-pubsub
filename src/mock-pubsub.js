@@ -56,31 +56,29 @@ const createTopic = (projectId, name) => ({
   },
   async publish(data, attributes) {
     await delay(5);
-    const message = { data, attributes };
     this._subscriptions.forEach((name) => {
-      subscriptions[name]._addMessage(message);
+      const message = subscriptions[name]._createMessage({ data, attributes });
+      subscriptions[name]._queueMessage(message);
     });
   },
   async publishMessage(messageOptions) {
     await delay(5);
-    let message = {};
+    let data;
+    let attributes;
 
     if (messageOptions.data) {
-      message = {
-        data: messageOptions.data,
-        attributes: messageOptions.attributes,
-      };
+      data = messageOptions.data;
+      attributes = messageOptions.attributes;
     }
 
     if (messageOptions.json) {
-      message = {
-        data: JSON.stringify(messageOptions.json),
-        attributes: messageOptions.attributes,
-      };
+      data = JSON.stringify(messageOptions.json);
+      attributes = messageOptions.attributes;
     }
 
     this._subscriptions.forEach((name) => {
-      subscriptions[name]._addMessage(message);
+      const message = subscriptions[name]._createMessage({ data, attributes });
+      subscriptions[name]._queueMessage(message);
     });
   },
   setPublishOptions() {},
@@ -121,19 +119,23 @@ const createSubscription = (name) => ({
     this._listeners = [];
   },
   close() {},
-  _addMessage(message) {
-    const messageWithAck = {
-      ...message,
+  _createMessage({ data, attributes }) {
+    const message = {
+      data,
+      attributes,
       ack: () => {},
       nack: async () => {
         await delay(10);
-        this._addMessage(message);
+        this._queueMessage(message);
       },
     };
+    return message;
+  },
+  _queueMessage(message) {
     if (this._listeners.length > 0) {
-      pickRandom(this._listeners)(messageWithAck);
+      pickRandom(this._listeners)(message);
     } else {
-      this._undeliveredMessages.push(messageWithAck);
+      this._undeliveredMessages.push(message);
     }
   },
 });
