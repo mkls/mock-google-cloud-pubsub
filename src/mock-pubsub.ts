@@ -12,6 +12,8 @@ import {
   delay,
   libError,
   pickRandom,
+  makeTopicName,
+  makeSubscriptionName,
   nonExisitingTopic,
   nonExisitingSubscription,
   emptyResponse,
@@ -28,25 +30,11 @@ type MockSubscription = Subscription & {
 const topics: Record<string, Topic> = {};
 const subscriptions: Record<string, MockSubscription> = {};
 
-function makeTopicName({
-  topicName,
-  projectId,
-}: {
-  topicName: string;
-  projectId: string;
-}): string {
-  return topicName.startsWith('projects/')
-    ? topicName
-    : `projects/${projectId}/topics/${topicName}`;
-}
-
 function getSubscription(
   projectId: string,
   subscriptionName: string,
 ): Subscription {
-  const name = subscriptionName.startsWith('projects/')
-    ? subscriptionName
-    : `projects/${projectId}/subscriptions/${subscriptionName}`;
+  const name = makeSubscriptionName({ projectId, subscriptionName });
   return subscriptions[name] || nonExisitingSubscription;
 }
 
@@ -69,7 +57,7 @@ class PubSub implements RealPubSub {
   }
 
   async createTopic(topicName: string) {
-    const name = makeTopicName({ topicName, projectId: this.projectId });
+    const name = makeTopicName({ projectId: this.projectId, topicName });
     if (topics[name]) {
       throw libError(6, 'ALREADY_EXISTS: Topic already exists');
     }
@@ -81,7 +69,7 @@ class PubSub implements RealPubSub {
   }
 
   topic(topicName: string) {
-    const name = makeTopicName({ topicName, projectId: this.projectId });
+    const name = makeTopicName({ projectId: this.projectId, topicName });
     return topics[name] || nonExisitingTopic;
   }
 
@@ -101,7 +89,7 @@ function createTopic(projectId: string, name: string): Topic {
       return emptyResponse;
     },
     async createSubscription(subscriptionName: string, options: object) {
-      const name = `projects/${projectId}/subscriptions/${subscriptionName}`;
+      const name = makeSubscriptionName({ projectId, subscriptionName });
       if (subscriptions[name]) {
         throw libError(6, 'ALREADY_EXISTS: Subscription already exists');
       }
