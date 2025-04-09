@@ -2,13 +2,25 @@ require('dotenv-haphap').config('confidential.env');
 import waitForExpect from 'wait-for-expect';
 import { PubSub, type Message } from '@google-cloud/pubsub';
 import { PubSub as MockPubSub } from '../src/mock-pubsub';
+import { delay } from '../src/utils';
 
 const prefix = process.env.RESOURCE_PREFIX || 'mock-pubsub-prefix-';
 const projectId = process.env.GCP_PROJECT_ID;
 const gcpCredential = process.env.gcpCredential || '{}';
 
 const prefixedName = (name: string) => `${prefix}${name}`;
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
+  const [topics] = await pubsub.getTopics();
+  const [subscriptions] = await pubsub.getSubscriptions();
+
+  for (const topic of topics) {
+    await topic.delete();
+  }
+  for (const subscription of subscriptions) {
+    await subscription.delete();
+  }
+}
 
 [
   {
@@ -21,24 +33,8 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
   { title: 'Mock PubSub', pubsub: new MockPubSub({ projectId }) },
 ].forEach(({ title, pubsub }) => {
   describe(title, () => {
-    const getPrefixedTopics = async () => {
-      const [topics] = await pubsub.getTopics();
-      return topics.filter((topic) => topic.name.includes(`topics/${prefix}`));
-    };
-    const getPrefixedSubscriptions = async () => {
-      const [subscriptions] = await pubsub.getSubscriptions();
-      return subscriptions.filter((topic) =>
-        topic.name.includes(`subscriptions/${prefix}`),
-      );
-    };
-
     beforeEach(async () => {
-      for (const topic of await getPrefixedTopics()) {
-        await topic.delete();
-      }
-      for (const subscription of await getPrefixedSubscriptions()) {
-        await subscription.delete();
-      }
+      await clearPubSubInstance(pubsub);
     });
 
     describe('creating, listing and deleting topics and subscriptions', () => {
@@ -132,7 +128,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
           await pubsub.topic(prefixedName('t1')).delete();
 
-          const topics = await getPrefixedTopics();
+          const [topics] = await pubsub.getTopics();
           expect(topics.map((t) => t.name)).toEqual([
             `projects/${projectId}/topics/${prefixedName('t2')}`,
           ]);
@@ -145,7 +141,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
             .topic(`projects/${projectId}/topics/${prefixedName('tod')}`)
             .delete();
 
-          const topics = await getPrefixedTopics();
+          const [topics] = await pubsub.getTopics();
           expect(topics).toEqual([]);
         });
 
@@ -251,7 +247,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
           await pubsub.subscription(prefixedName('l1')).delete();
 
-          const subscriptions = await getPrefixedSubscriptions();
+          const [subscriptions] = await pubsub.getSubscriptions();
           expect(subscriptions.map((s) => s.name)).toEqual([
             `projects/${projectId}/subscriptions/${prefixedName('l2')}`,
           ]);
@@ -267,7 +263,8 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
             )
             .delete();
 
-          expect(await getPrefixedSubscriptions()).toEqual([]);
+          const [subscriptions] = await pubsub.getSubscriptions();
+          expect(subscriptions).toEqual([]);
         });
 
         it('should throw error when deleting a non existing subscription', async () => {
@@ -424,7 +421,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
         subscription.removeAllListeners();
 
         await topic.publish(Buffer.from('t45'));
-        await wait(100);
+        await delay(100);
         expect(receivedMessages).toEqual([]);
       });
 
@@ -438,7 +435,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
         subscription.on('error', (message) => receivedMessages.push(message));
 
         await topic.publish(Buffer.from('t45'));
-        await wait(100);
+        await delay(100);
         expect(receivedMessages).toEqual([]);
       });
 
