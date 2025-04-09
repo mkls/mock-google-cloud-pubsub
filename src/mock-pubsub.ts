@@ -47,12 +47,20 @@ class PubSub implements RealPubSub {
   }
 
   async getTopics() {
-    const response: GetTopicsResponse = [Object.values(topics)];
+    const projectTopics = Object.values(topics).filter((topic) =>
+      topic.name.startsWith(`projects/${this.projectId}/`),
+    );
+
+    const response: GetTopicsResponse = [projectTopics];
     return response;
   }
 
   async getSubscriptions() {
-    const response: GetSubscriptionsResponse = [Object.values(subscriptions)];
+    const projectSubscriptions = Object.values(subscriptions).filter(
+      (subscription) =>
+        subscription.name.startsWith(`projects/${this.projectId}/`),
+    );
+    const response: GetSubscriptionsResponse = [projectSubscriptions];
     return response;
   }
 

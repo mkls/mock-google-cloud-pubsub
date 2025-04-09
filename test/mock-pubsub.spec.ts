@@ -29,9 +29,14 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       projectId,
       credentials: JSON.parse(gcpCredential),
     }),
+    PubSubClass: PubSub,
   },
-  { title: 'Mock PubSub', pubsub: new MockPubSub({ projectId }) },
-].forEach(({ title, pubsub }) => {
+  {
+    title: 'Mock PubSub',
+    pubsub: new MockPubSub({ projectId }),
+    PubSubClass: MockPubSub,
+  },
+].forEach(({ title, pubsub, PubSubClass }) => {
   describe(title, () => {
     beforeEach(async () => {
       await clearPubSubInstance(pubsub);
@@ -101,21 +106,39 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       });
 
       describe('getTopics', () => {
-        it('should return exsisting topics', async () => {
+        it('should return list of existing topics for given PubSub instance', async () => {
+          const otherProjectId = 'another-project-id';
+          const otherPubsub = new PubSubClass({
+            projectId: otherProjectId,
+          });
+          await clearPubSubInstance(otherPubsub);
+
           await Promise.all([
             pubsub.createTopic(prefixedName('t1')),
             pubsub.createTopic(prefixedName('t2')),
+            otherPubsub.createTopic(prefixedName('t1')),
+            otherPubsub.createTopic(prefixedName('t2')),
           ]);
 
-          const [topics] = await pubsub.getTopics();
+          // pubsub instance 1
+          {
+            const [topics] = await pubsub.getTopics();
+            const topicNames = topics.map((t) => t.name);
+            expect(topicNames).toEqual([
+              `projects/${projectId}/topics/${prefixedName('t1')}`,
+              `projects/${projectId}/topics/${prefixedName('t2')}`,
+            ]);
+          }
 
-          const topicNames = topics
-            .map((t) => t.name)
-            .filter((name) => name.includes(prefix));
-          expect(topicNames).toEqual([
-            `projects/${projectId}/topics/${prefixedName('t1')}`,
-            `projects/${projectId}/topics/${prefixedName('t2')}`,
-          ]);
+          // pubsub instance 2
+          {
+            const [topics] = await otherPubsub.getTopics();
+            const topicNames = topics.map((t) => t.name);
+            expect(topicNames).toEqual([
+              `projects/${otherProjectId}/topics/${prefixedName('t1')}`,
+              `projects/${otherProjectId}/topics/${prefixedName('t2')}`,
+            ]);
+          }
         });
       });
 
@@ -222,20 +245,46 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       });
 
       describe('getSubscriptions', () => {
-        it('should return list of existing subscriptions', async () => {
+        it('should return list of existing subscriptions for given PubSub instance', async () => {
+          const otherProjectId = 'another-project-id';
+          const otherPubsub = new PubSubClass({
+            projectId: otherProjectId,
+          });
+          await clearPubSubInstance(otherPubsub);
+
           const [topic] = await pubsub.createTopic(prefixedName('lajos'));
-          await topic.createSubscription(prefixedName('l1'));
-          await topic.createSubscription(prefixedName('l2'));
+          const [otherProjectTopic] = await otherPubsub.createTopic(
+            prefixedName('lajos'),
+          );
 
-          const [subscriptions] = await pubsub.getSubscriptions();
-
-          const subNames = subscriptions
-            .map((s) => s.name)
-            .filter((name) => name.includes(prefix));
-          expect(subNames).toEqual([
-            `projects/${projectId}/subscriptions/${prefixedName('l1')}`,
-            `projects/${projectId}/subscriptions/${prefixedName('l2')}`,
+          await Promise.all([
+            await topic.createSubscription(prefixedName('l1')),
+            await topic.createSubscription(prefixedName('l2')),
+            await otherProjectTopic.createSubscription(prefixedName('l1')),
+            await otherProjectTopic.createSubscription(prefixedName('l2')),
           ]);
+
+          // pubsub instance 1
+          {
+            const [subscriptions] = await pubsub.getSubscriptions();
+            const subNames = subscriptions.map((s) => s.name);
+
+            expect(subNames).toEqual([
+              `projects/${projectId}/subscriptions/${prefixedName('l1')}`,
+              `projects/${projectId}/subscriptions/${prefixedName('l2')}`,
+            ]);
+          }
+
+          // pubsub instance 2
+          {
+            const [subscriptions] = await otherPubsub.getSubscriptions();
+            const subNames = subscriptions.map((s) => s.name);
+
+            expect(subNames).toEqual([
+              `projects/${otherProjectId}/subscriptions/${prefixedName('l1')}`,
+              `projects/${otherProjectId}/subscriptions/${prefixedName('l2')}`,
+            ]);
+          }
         });
       });
 
