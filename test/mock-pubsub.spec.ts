@@ -43,15 +43,30 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     describe('creating, listing and deleting topics and subscriptions', () => {
       describe('createTopic', () => {
-        it('should create a topic', async () => {
-          const topicName = prefixedName('topic1');
+        describe('with topic name', () => {
+          it('should create a topic', async () => {
+            const topicName = prefixedName('topic1');
+            const [topic] = await pubsub.createTopic(topicName);
 
-          const [topic] = await pubsub.createTopic(topicName);
+            expect(topic.name).toEqual(
+              `projects/${projectId}/topics/${topicName}`,
+            );
+            expect(typeof topic.setPublishOptions).toEqual('function');
+          });
+        });
 
-          expect(topic.name).toEqual(
-            `projects/${projectId}/topics/${topicName}`,
-          );
-          expect(typeof topic.setPublishOptions).toEqual('function');
+        describe('with topic full name', () => {
+          it('should create a topic', async () => {
+            const topicName = prefixedName('topic1');
+            const [topic] = await pubsub.createTopic(
+              `projects/${projectId}/topics/${topicName}`,
+            );
+
+            expect(topic.name).toEqual(
+              `projects/${projectId}/topics/${topicName}`,
+            );
+            expect(typeof topic.setPublishOptions).toEqual('function');
+          });
         });
 
         it('should throw error if topic already exists', async () => {
