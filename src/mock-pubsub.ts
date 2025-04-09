@@ -150,7 +150,21 @@ function createTopic(projectId: string, name: string): Topic {
 function createSubscription(name: string): MockSubscription {
   type Listener = (message: Message) => void;
   const listeners: Listener[] = [];
-  const undeliveredMessages: Message[] = [];
+  const messageQueue: Message[] = [];
+
+  function processMessageQueue() {
+    if (!listeners.length) {
+      return;
+    }
+    messageQueue.forEach((message) => {
+      const listener = pickRandom(listeners);
+      if (listener) {
+        listener(message);
+      }
+    });
+
+    messageQueue.length = 0;
+  }
 
   // @ts-expect-error incomplete Subscription implementation
   const subscription: MockSubscription = {
@@ -166,8 +180,7 @@ function createSubscription(name: string): MockSubscription {
 
       // @ts-expect-error currently supporting only "message" listeners
       listeners.push(listener);
-      undeliveredMessages.forEach((message) => pickRandom(listeners)(message));
-      undeliveredMessages.length = 0;
+      processMessageQueue();
       return subscription;
     },
     removeAllListeners() {
@@ -188,17 +201,14 @@ function createSubscription(name: string): MockSubscription {
         ack: () => {},
         nack: async () => {
           await delay(10);
-          this._queueMessage(message);
+          subscription._queueMessage(message);
         },
       };
       return message;
     },
     _queueMessage(message) {
-      if (listeners.length > 0) {
-        pickRandom(listeners)(message);
-      } else {
-        undeliveredMessages.push(message);
-      }
+      messageQueue.push(message);
+      processMessageQueue();
     },
   };
 

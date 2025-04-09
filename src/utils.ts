@@ -11,8 +11,8 @@ export function delay(ms: number): Promise<unknown> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function pickRandom<Item>(list: Item[]): Item {
-  return list[Math.floor(Math.random() * list.length)] as Item;
+export function pickRandom<Item>(list: Item[]): Item | undefined {
+  return list[Math.floor(Math.random() * list.length)];
 }
 
 // Fake responses
