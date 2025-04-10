@@ -43,15 +43,47 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     describe('creating, listing and deleting topics and subscriptions', () => {
       describe('createTopic', () => {
-        it('should create a topic', async () => {
-          const topicName = prefixedName('topic1');
+        describe('with name', () => {
+          it('should create a topic', async () => {
+            const topicName = prefixedName('topic1');
+            const [topic] = await pubsub.createTopic(topicName);
 
-          const [topic] = await pubsub.createTopic(topicName);
+            expect(topic.name).toEqual(
+              `projects/${projectId}/topics/${topicName}`,
+            );
+            expect(typeof topic.setPublishOptions).toEqual('function');
+          });
+        });
 
-          expect(topic.name).toEqual(
-            `projects/${projectId}/topics/${topicName}`,
-          );
-          expect(typeof topic.setPublishOptions).toEqual('function');
+        describe('with full name', () => {
+          it('should create a topic', async () => {
+            const topicName = prefixedName('topic1');
+            const [topic] = await pubsub.createTopic(
+              `projects/${projectId}/topics/${topicName}`,
+            );
+
+            expect(topic.name).toEqual(
+              `projects/${projectId}/topics/${topicName}`,
+            );
+            expect(typeof topic.setPublishOptions).toEqual('function');
+          });
+        });
+
+        describe('with malformed full name', () => {
+          it('should throw error', async () => {
+            const malformedName = `projects/${projectId}/malformed-name/${prefixedName('ted')}`;
+            try {
+              await pubsub.createTopic(malformedName);
+              throw new Error('should throw before');
+            } catch (error) {
+              // @ts-expect-error error expected
+              expect(error.message).toEqual(
+                `3 INVALID_ARGUMENT: Invalid [topics] name: (name=${malformedName})`,
+              );
+              // @ts-expect-error error expected
+              expect(error.code).toEqual(3);
+            }
+          });
         });
 
         it('should throw error if topic already exists', async () => {
@@ -73,7 +105,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
       });
 
       describe('getTopics', () => {
-        it('should return exisiting topics', async () => {
+        it('should return exsisting topics', async () => {
           await Promise.all([
             pubsub.createTopic(prefixedName('t1')),
             pubsub.createTopic(prefixedName('t2')),
@@ -131,15 +163,48 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
       });
 
       describe('topic.createSubscription', () => {
-        it('should create a subscription', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('ted'));
-          const [subscription] = await topic.createSubscription(
-            prefixedName('ted'),
-          );
+        describe('with name', () => {
+          it('should create a subscription', async () => {
+            const [topic] = await pubsub.createTopic(prefixedName('ted'));
+            const [subscription] = await topic.createSubscription(
+              prefixedName('ted'),
+            );
 
-          expect(subscription.name).toEqual(
-            `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
-          );
+            expect(subscription.name).toEqual(
+              `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
+            );
+          });
+        });
+
+        describe('with full name', () => {
+          it('should create a subscription', async () => {
+            const [topic] = await pubsub.createTopic(prefixedName('ted'));
+            const [subscription] = await topic.createSubscription(
+              `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
+            );
+
+            expect(subscription.name).toEqual(
+              `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
+            );
+          });
+        });
+
+        describe('with malformed full name', () => {
+          it('should throw error', async () => {
+            const [topic] = await pubsub.createTopic(prefixedName('ted'));
+            const malformedName = `projects/${projectId}/malformed-name/${prefixedName('ted')}`;
+            try {
+              await topic.createSubscription(malformedName);
+              throw new Error('should throw before');
+            } catch (error) {
+              // @ts-expect-error error expected
+              expect(error.message).toEqual(
+                `3 INVALID_ARGUMENT: Invalid [subscriptions] name: (name=${malformedName})`,
+              );
+              // @ts-expect-error error expected
+              expect(error.code).toEqual(3);
+            }
+          });
         });
 
         it('should throw error if subscription already exists', async () => {

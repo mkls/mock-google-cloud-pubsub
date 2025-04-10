@@ -12,6 +12,8 @@ import {
   delay,
   libError,
   pickRandom,
+  makeTopicName,
+  makeSubscriptionName,
   nonExisitingTopic,
   nonExisitingSubscription,
   emptyResponse,
@@ -28,13 +30,11 @@ type MockSubscription = Subscription & {
 const topics: Record<string, Topic> = {};
 const subscriptions: Record<string, MockSubscription> = {};
 
-function getSubscriptionObject(
+function getSubscription(
   projectId: string,
   subscriptionName: string,
 ): Subscription {
-  const name = subscriptionName.startsWith('projects')
-    ? subscriptionName
-    : `projects/${projectId}/subscriptions/${subscriptionName}`;
+  const name = makeSubscriptionName({ projectId, subscriptionName });
   return subscriptions[name] || nonExisitingSubscription;
 }
 
@@ -57,7 +57,7 @@ class PubSub implements RealPubSub {
   }
 
   async createTopic(topicName: string) {
-    const name = `projects/${this.projectId}/topics/${topicName}`;
+    const name = makeTopicName({ projectId: this.projectId, topicName });
     if (topics[name]) {
       throw libError(6, 'ALREADY_EXISTS: Topic already exists');
     }
@@ -69,14 +69,12 @@ class PubSub implements RealPubSub {
   }
 
   topic(topicName: string) {
-    const name = topicName.startsWith('projects')
-      ? topicName
-      : `projects/${this.projectId}/topics/${topicName}`;
+    const name = makeTopicName({ projectId: this.projectId, topicName });
     return topics[name] || nonExisitingTopic;
   }
 
   subscription(subscriptionName: string) {
-    return getSubscriptionObject(this.projectId, subscriptionName);
+    return getSubscription(this.projectId, subscriptionName);
   }
 }
 
@@ -91,7 +89,7 @@ function createTopic(projectId: string, name: string): Topic {
       return emptyResponse;
     },
     async createSubscription(subscriptionName: string, options: object) {
-      const name = `projects/${projectId}/subscriptions/${subscriptionName}`;
+      const name = makeSubscriptionName({ projectId, subscriptionName });
       if (subscriptions[name]) {
         throw libError(6, 'ALREADY_EXISTS: Subscription already exists');
       }
@@ -140,7 +138,7 @@ function createTopic(projectId: string, name: string): Topic {
     },
     setPublishOptions() {},
     subscription(subscriptionName: string) {
-      return getSubscriptionObject(projectId, subscriptionName);
+      return getSubscription(projectId, subscriptionName);
     },
   };
 
