@@ -61,7 +61,6 @@ To setup connection for real pubsub
 - create a `confidential.env` file in root
 - set `GCP_PROJECT_ID=<your-project-id>`
 - set `GCP_CREDENTIALS=<credentials for a service account as json>`
-- set `RESOURCE_PREFIX` to a uniq string, resources created during tests will be prefix with this value
 
 You can use the docker pubsub emulator instead of the real pubsub:
 

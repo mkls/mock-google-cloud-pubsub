@@ -4,11 +4,8 @@ import { PubSub, type Message } from '@google-cloud/pubsub';
 import { PubSub as MockPubSub } from '../src/mock-pubsub';
 import { delay } from '../src/utils';
 
-const prefix = process.env.RESOURCE_PREFIX || 'mock-pubsub-prefix-';
 const projectId = process.env.GCP_PROJECT_ID;
 const gcpCredential = process.env.gcpCredential || '{}';
-
-const prefixedName = (name: string) => `${prefix}${name}`;
 
 async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
   const [topics] = await pubsub.getTopics();
@@ -46,7 +43,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       describe('createTopic', () => {
         describe('with name', () => {
           it('should create a topic', async () => {
-            const topicName = prefixedName('topic1');
+            const topicName = 'topic1';
             const [topic] = await pubsub.createTopic(topicName);
 
             expect(topic.name).toEqual(
@@ -58,7 +55,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
         describe('with full name', () => {
           it('should create a topic', async () => {
-            const topicName = prefixedName('topic1');
+            const topicName = 'topic1';
             const [topic] = await pubsub.createTopic(
               `projects/${projectId}/topics/${topicName}`,
             );
@@ -72,7 +69,8 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
         describe('with malformed full name', () => {
           it('should throw error', async () => {
-            const malformedName = `projects/${projectId}/malformed-name/${prefixedName('ted')}`;
+            const malformedName = `projects/${projectId}/malformed-name/ted}`;
+
             try {
               await pubsub.createTopic(malformedName);
               throw new Error('should throw before');
@@ -88,9 +86,9 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
 
         it('should throw error if topic already exists', async () => {
-          const topicName = prefixedName('topic1');
-
+          const topicName = 'topic1';
           await pubsub.createTopic(topicName);
+
           try {
             await pubsub.createTopic(topicName);
             throw new Error('should throw before');
@@ -114,19 +112,20 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           await clearPubSubInstance(otherPubsub);
 
           await Promise.all([
-            pubsub.createTopic(prefixedName('t1')),
-            pubsub.createTopic(prefixedName('t2')),
-            otherPubsub.createTopic(prefixedName('t1')),
-            otherPubsub.createTopic(prefixedName('t2')),
+            pubsub.createTopic('topic1'),
+            pubsub.createTopic('topic2'),
+            otherPubsub.createTopic('topic1'),
+            otherPubsub.createTopic('topic2'),
           ]);
 
           // pubsub instance 1
           {
             const [topics] = await pubsub.getTopics();
             const topicNames = topics.map((t) => t.name);
+
             expect(topicNames).toEqual([
-              `projects/${projectId}/topics/${prefixedName('t1')}`,
-              `projects/${projectId}/topics/${prefixedName('t2')}`,
+              `projects/${projectId}/topics/topic1`,
+              `projects/${projectId}/topics/topic2`,
             ]);
           }
 
@@ -134,9 +133,10 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           {
             const [topics] = await otherPubsub.getTopics();
             const topicNames = topics.map((t) => t.name);
+
             expect(topicNames).toEqual([
-              `projects/${otherProjectId}/topics/${prefixedName('t1')}`,
-              `projects/${otherProjectId}/topics/${prefixedName('t2')}`,
+              `projects/${otherProjectId}/topics/topic1`,
+              `projects/${otherProjectId}/topics/topic2`,
             ]);
           }
         });
@@ -145,24 +145,20 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       describe('topic.delete', () => {
         it('should delete a topic', async () => {
           await Promise.all([
-            pubsub.createTopic(prefixedName('t1')),
-            pubsub.createTopic(prefixedName('t2')),
+            pubsub.createTopic('topic1'),
+            pubsub.createTopic('topic2'),
           ]);
-
-          await pubsub.topic(prefixedName('t1')).delete();
-
+          await pubsub.topic('topic1').delete();
           const [topics] = await pubsub.getTopics();
+
           expect(topics.map((t) => t.name)).toEqual([
-            `projects/${projectId}/topics/${prefixedName('t2')}`,
+            `projects/${projectId}/topics/topic2`,
           ]);
         });
 
         it('should delete topic by its full name', async () => {
-          await pubsub.createTopic(prefixedName('tod'));
-
-          await pubsub
-            .topic(`projects/${projectId}/topics/${prefixedName('tod')}`)
-            .delete();
+          await pubsub.createTopic('topic1');
+          await pubsub.topic(`projects/${projectId}/topics/topic1`).delete();
 
           const [topics] = await pubsub.getTopics();
           expect(topics).toEqual([]);
@@ -170,7 +166,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
         it('should throw error when deleting a non existing topic', async () => {
           try {
-            await pubsub.topic(prefixedName('non-let')).delete();
+            await pubsub.topic('non-existing').delete();
             throw new Error('should throw before');
           } catch (error) {
             // @ts-expect-error error expected
@@ -184,34 +180,32 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       describe('topic.createSubscription', () => {
         describe('with name', () => {
           it('should create a subscription', async () => {
-            const [topic] = await pubsub.createTopic(prefixedName('ted'));
-            const [subscription] = await topic.createSubscription(
-              prefixedName('ted'),
-            );
+            const [topic] = await pubsub.createTopic('topic1');
+            const [subscription] = await topic.createSubscription('topic1');
 
             expect(subscription.name).toEqual(
-              `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
+              `projects/${projectId}/subscriptions/topic1`,
             );
           });
         });
 
         describe('with full name', () => {
           it('should create a subscription', async () => {
-            const [topic] = await pubsub.createTopic(prefixedName('ted'));
+            const [topic] = await pubsub.createTopic('topic1');
             const [subscription] = await topic.createSubscription(
-              `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
+              `projects/${projectId}/subscriptions/topic1`,
             );
 
             expect(subscription.name).toEqual(
-              `projects/${projectId}/subscriptions/${prefixedName('ted')}`,
+              `projects/${projectId}/subscriptions/topic1`,
             );
           });
         });
 
         describe('with malformed full name', () => {
           it('should throw error', async () => {
-            const [topic] = await pubsub.createTopic(prefixedName('ted'));
-            const malformedName = `projects/${projectId}/malformed-name/${prefixedName('ted')}`;
+            const [topic] = await pubsub.createTopic('topic1');
+            const malformedName = `projects/${projectId}/malformed-name/sub1`;
             try {
               await topic.createSubscription(malformedName);
               throw new Error('should throw before');
@@ -227,11 +221,11 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
 
         it('should throw error if subscription already exists', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('lajos'));
-          await topic.createSubscription(prefixedName('lajos'));
+          const [topic] = await pubsub.createTopic('topic1');
+          await topic.createSubscription('sub1');
 
           try {
-            await topic.createSubscription(prefixedName('lajos'));
+            await topic.createSubscription('sub1');
             throw new Error('should throw before');
           } catch (error) {
             // @ts-expect-error error expected
@@ -252,16 +246,14 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           });
           await clearPubSubInstance(otherPubsub);
 
-          const [topic] = await pubsub.createTopic(prefixedName('lajos'));
-          const [otherProjectTopic] = await otherPubsub.createTopic(
-            prefixedName('lajos'),
-          );
+          const [topic] = await pubsub.createTopic('topic1');
+          const [otherProjectTopic] = await otherPubsub.createTopic('topic1');
 
           await Promise.all([
-            await topic.createSubscription(prefixedName('l1')),
-            await topic.createSubscription(prefixedName('l2')),
-            await otherProjectTopic.createSubscription(prefixedName('l1')),
-            await otherProjectTopic.createSubscription(prefixedName('l2')),
+            await topic.createSubscription('sub1'),
+            await topic.createSubscription('sub2'),
+            await otherProjectTopic.createSubscription('sub1'),
+            await otherProjectTopic.createSubscription('sub2'),
           ]);
 
           // pubsub instance 1
@@ -270,8 +262,8 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
             const subNames = subscriptions.map((s) => s.name);
 
             expect(subNames).toEqual([
-              `projects/${projectId}/subscriptions/${prefixedName('l1')}`,
-              `projects/${projectId}/subscriptions/${prefixedName('l2')}`,
+              `projects/${projectId}/subscriptions/sub1`,
+              `projects/${projectId}/subscriptions/sub2`,
             ]);
           }
 
@@ -281,8 +273,8 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
             const subNames = subscriptions.map((s) => s.name);
 
             expect(subNames).toEqual([
-              `projects/${otherProjectId}/subscriptions/${prefixedName('l1')}`,
-              `projects/${otherProjectId}/subscriptions/${prefixedName('l2')}`,
+              `projects/${otherProjectId}/subscriptions/sub1`,
+              `projects/${otherProjectId}/subscriptions/sub2`,
             ]);
           }
         });
@@ -290,26 +282,23 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
       describe('subscription.delete', () => {
         it('should delete subscription', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('lajos'));
-          await topic.createSubscription(prefixedName('l1'));
-          await topic.createSubscription(prefixedName('l2'));
-
-          await pubsub.subscription(prefixedName('l1')).delete();
-
+          const [topic] = await pubsub.createTopic('topic1');
+          await topic.createSubscription('sub1');
+          await topic.createSubscription('sub2');
+          await pubsub.subscription('sub1').delete();
           const [subscriptions] = await pubsub.getSubscriptions();
+
           expect(subscriptions.map((s) => s.name)).toEqual([
-            `projects/${projectId}/subscriptions/${prefixedName('l2')}`,
+            `projects/${projectId}/subscriptions/sub2`,
           ]);
         });
 
         it('should delete subscription by its full name', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('lajos'));
-          await topic.createSubscription(prefixedName('l1'));
+          const [topic] = await pubsub.createTopic('topic1');
+          await topic.createSubscription('sub1');
 
           await pubsub
-            .subscription(
-              `projects/${projectId}/subscriptions/${prefixedName('l1')}`,
-            )
+            .subscription(`projects/${projectId}/subscriptions/sub1`)
             .delete();
 
           const [subscriptions] = await pubsub.getSubscriptions();
@@ -318,7 +307,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
         it('should throw error when deleting a non existing subscription', async () => {
           try {
-            await pubsub.subscription(prefixedName('non-let')).delete();
+            await pubsub.subscription('non-existing').delete();
             throw new Error('should throw before');
           } catch (error) {
             // @ts-expect-error error expected
@@ -333,15 +322,12 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
       describe('topic.subscription', () => {
         it('should return subscription through a topic object', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('kacsa'));
-          await topic.createSubscription(prefixedName('nyul'));
-
-          const subscription = pubsub
-            .topic(prefixedName('kacsa'))
-            .subscription(prefixedName('nyul'));
+          const [topic] = await pubsub.createTopic('topic1');
+          await topic.createSubscription('sub1');
+          const subscription = pubsub.topic('topic1').subscription('sub1');
 
           expect(subscription.name).toEqual(
-            `projects/${projectId}/subscriptions/${prefixedName('nyul')}`,
+            `projects/${projectId}/subscriptions/sub1`,
           );
         });
       });
@@ -350,10 +336,8 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
     describe('publishing and consuming messages', () => {
       describe('topic.publish', () => {
         it('should consume messages published to a topic', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('t32'));
-          const [subscription] = await topic.createSubscription(
-            prefixedName('s32'),
-          );
+          const [topic] = await pubsub.createTopic('topic1');
+          const [subscription] = await topic.createSubscription('sub1');
 
           const receivedMessages: Message[] = [];
           subscription.on('message', (message) =>
@@ -378,10 +362,8 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
       describe('topic.publishMessage({data: Buffer})', () => {
         it('should consume messages published to a topic', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('t32'));
-          const [subscription] = await topic.createSubscription(
-            prefixedName('s32'),
-          );
+          const [topic] = await pubsub.createTopic('topic1');
+          const [subscription] = await topic.createSubscription('sub1');
 
           const receivedMessages: Message[] = [];
           subscription.on('message', (message) =>
@@ -409,10 +391,8 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
       describe('topic.publishMessage({json: String})', () => {
         it('should consume messages published to a topic', async () => {
-          const [topic] = await pubsub.createTopic(prefixedName('t32'));
-          const [subscription] = await topic.createSubscription(
-            prefixedName('s32'),
-          );
+          const [topic] = await pubsub.createTopic('topic1');
+          const [subscription] = await topic.createSubscription('sub1');
 
           const receivedMessages: Message[] = [];
           subscription.on('message', (message) =>
@@ -442,12 +422,10 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       });
 
       it('should consume messages that were published before subscription consumption was started', async () => {
-        const [topic] = await pubsub.createTopic(prefixedName('t34'));
-        const [subscription] = await topic.createSubscription(
-          prefixedName('s34'),
-        );
+        const [topic] = await pubsub.createTopic('topic1');
+        const [subscription] = await topic.createSubscription('sub1');
 
-        await topic.publish(Buffer.from('t45'));
+        await topic.publish(Buffer.from('message-data'));
 
         const receivedMessages: Message[] = [];
         subscription.on('message', (message) => receivedMessages.push(message));
@@ -455,44 +433,38 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         await waitForExpect(() =>
           expect(receivedMessages.length).toBeGreaterThan(0),
         );
-        expect(receivedMessages[0]?.data.toString()).toEqual('t45');
+        expect(receivedMessages[0]?.data.toString()).toEqual('message-data');
         subscription.removeAllListeners('message');
       });
 
       it('should not receive messages if removeAllListeners was called on subscription', async () => {
-        const [topic] = await pubsub.createTopic(prefixedName('t45'));
-        const [subscription] = await topic.createSubscription(
-          prefixedName('s45'),
-        );
+        const [topic] = await pubsub.createTopic('topic1');
+        const [subscription] = await topic.createSubscription('sub1');
         const receivedMessages: Message[] = [];
         subscription.on('message', (message) => receivedMessages.push(message));
 
         subscription.removeAllListeners();
 
-        await topic.publish(Buffer.from('t45'));
+        await topic.publish(Buffer.from('message-data'));
         await delay(100);
         expect(receivedMessages).toEqual([]);
       });
 
       it('should only pass messages to "message" event listeners', async () => {
-        const [topic] = await pubsub.createTopic(prefixedName('t45'));
-        const [subscription] = await topic.createSubscription(
-          prefixedName('s45'),
-        );
+        const [topic] = await pubsub.createTopic('topic1');
+        const [subscription] = await topic.createSubscription('sub1');
 
         const receivedMessages: unknown[] = [];
         subscription.on('error', (message) => receivedMessages.push(message));
 
-        await topic.publish(Buffer.from('t45'));
+        await topic.publish(Buffer.from('message-data'));
         await delay(100);
         expect(receivedMessages).toEqual([]);
       });
 
       it('should redeliver a message if it was nacked', async () => {
-        const [topic] = await pubsub.createTopic(prefixedName('t45'));
-        const [subscription] = await topic.createSubscription(
-          prefixedName('s45'),
-        );
+        const [topic] = await pubsub.createTopic('topic1');
+        const [subscription] = await topic.createSubscription('sub1');
 
         const receivedMessages: Message[] = [];
         let nackedOnce = false;
@@ -503,19 +475,17 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
             message.nack();
           }
         });
-        await topic.publish(Buffer.from('tm43'));
+        await topic.publish(Buffer.from('message-data'));
 
         await waitForExpect(() => expect(receivedMessages.length).toBe(2));
-        expect(receivedMessages[0]?.data.toString()).toEqual('tm43');
-        expect(receivedMessages[1]?.data.toString()).toEqual('tm43');
+        expect(receivedMessages[0]?.data.toString()).toEqual('message-data');
+        expect(receivedMessages[1]?.data.toString()).toEqual('message-data');
         subscription.removeAllListeners('message');
       });
 
       it('should call all listeners randomly when more are attached to a single subscription', async () => {
-        const [topic] = await pubsub.createTopic(prefixedName('t34'));
-        const [subscription] = await topic.createSubscription(
-          prefixedName('s34'),
-        );
+        const [topic] = await pubsub.createTopic('topic1');
+        const [subscription] = await topic.createSubscription('sub1');
 
         const receivedMessages1 = [];
         subscription.on('message', (message) =>
@@ -527,7 +497,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         );
 
         for (let i = 0; i < 10; i++) {
-          await topic.publish(Buffer.from('tm435'));
+          await topic.publish(Buffer.from('message-data'));
         }
 
         expect(receivedMessages1.length).toBeGreaterThan(1);
