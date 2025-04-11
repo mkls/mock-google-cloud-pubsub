@@ -15,6 +15,10 @@ export function pickRandom<Item>(list: Item[]): Item | undefined {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+export function makeFourDigitString(): string {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 const TOPIC_NAME_REGEX = /^projects\/.+\/topics\/.+$/;
 export function makeTopicName({
   projectId,
