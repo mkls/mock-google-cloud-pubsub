@@ -17,6 +17,7 @@ import {
   nonExisitingTopic,
   nonExisitingSubscription,
   emptyResponse,
+  makeFourDigitString,
 } from './utils';
 
 type MockSubscription = Subscription & {
@@ -200,15 +201,36 @@ function createSubscription(name: string): MockSubscription {
         ? dataInput
         : Buffer.from(typeof dataInput === 'string' ? dataInput : '');
 
-      // @ts-expect-error partial Message implementation
+      // https://cloud.google.com/nodejs/docs/reference/pubsub/latest/pubsub/message
       const message: Message = {
-        data,
+        ackId: `${name}:${makeFourDigitString()}`,
         attributes,
+        data,
+        length: data.length,
+        deliveryAttempt: 0,
+        // @ts-expect-error This should be actually a GCP PreciseDate instance
+        publishTime: new Date(),
+        id: makeFourDigitString(),
+        received: Date.now(),
+        isExactlyOnceDelivery: false,
+
+        endParentSpan: () => {},
         ack: () => {},
-        nack: async () => {
-          await delay(10);
-          subscription._queueMessage(message);
+        ackFailed: (error) => {},
+        ackWithResponse: async () => 'SUCCESS',
+        nack: () => {
+          setTimeout(() => {
+            subscription._queueMessage(message);
+          }, 10);
         },
+        nackWithResponse: async () => {
+          setTimeout(() => {
+            subscription._queueMessage(message);
+          }, 10);
+          return 'SUCCESS';
+        },
+        modAck: (deadline) => {},
+        modAckWithResponse: async (deadline) => 'SUCCESS',
       };
       return message;
     },
