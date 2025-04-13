@@ -7,6 +7,12 @@ import { delay } from '../src/utils';
 const projectId = process.env.GCP_PROJECT_ID;
 const gcpCredential = process.env.gcpCredential || '{}';
 
+function expectToBeDefined<Element>(
+  element: Element | undefined,
+): asserts element is Element {
+  expect(element).toBeDefined();
+}
+
 async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
   const [topics] = await pubsub.getTopics();
   const [subscriptions] = await pubsub.getSubscriptions();
@@ -14,6 +20,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
   for (const topic of topics) {
     await topic.delete();
   }
+
   for (const subscription of subscriptions) {
     await subscription.delete();
   }
@@ -335,7 +342,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
     describe('publishing and consuming messages', () => {
       describe('topic.publish', () => {
-        it('should consume messages published to a topic', async () => {
+        it('should send message to expected topic subscriber', async () => {
           const [topic] = await pubsub.createTopic('topic1');
           const [subscription] = await topic.createSubscription('sub1');
 
@@ -351,17 +358,15 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           );
           const message = receivedMessages[0];
 
-          expect(message).toBeDefined();
-          expect(message?.data.toString()).toEqual('Test message!');
-          expect(message?.attributes).toEqual({ kacsa: 'hap' });
-          expect(typeof message?.ack).toEqual('function');
-          expect(typeof message?.nack).toEqual('function');
+          expectToBeDefined(message);
+          expect(message.data.toString()).toEqual('Test message!');
+          expect(message.attributes).toEqual({ kacsa: 'hap' });
           subscription.removeAllListeners('message');
         });
       });
 
       describe('topic.publishMessage({data: Buffer})', () => {
-        it('should consume messages published to a topic', async () => {
+        it('should send message to expected topic subscriber', async () => {
           const [topic] = await pubsub.createTopic('topic1');
           const [subscription] = await topic.createSubscription('sub1');
 
@@ -380,17 +385,15 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           );
           const message = receivedMessages[0];
 
-          expect(message).toBeDefined();
-          expect(message?.data.toString()).toEqual('Test message!');
-          expect(message?.attributes).toEqual({ kacsa: 'hap' });
-          expect(typeof message?.ack).toEqual('function');
-          expect(typeof message?.nack).toEqual('function');
+          expectToBeDefined(message);
+          expect(message.data.toString()).toEqual('Test message!');
+          expect(message.attributes).toEqual({ kacsa: 'hap' });
           subscription.removeAllListeners('message');
         });
       });
 
       describe('topic.publishMessage({json: String})', () => {
-        it('should consume messages published to a topic', async () => {
+        it('should send message to expected topic subscriber', async () => {
           const [topic] = await pubsub.createTopic('topic1');
           const [subscription] = await topic.createSubscription('sub1');
 
@@ -409,14 +412,11 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           );
           const message = receivedMessages[0];
 
-          expect(message).toBeDefined();
-          // @ts-expect-error JSON parse will fail in case of undefined
-          expect(JSON.parse(message?.data.toString())).toEqual({
+          expectToBeDefined(message);
+          expect(JSON.parse(message.data.toString())).toEqual({
             data: 'Test message!',
           });
-          expect(message?.attributes).toEqual({ kacsa: 'hap' });
-          expect(typeof message?.ack).toEqual('function');
-          expect(typeof message?.nack).toEqual('function');
+          expect(message.attributes).toEqual({ kacsa: 'hap' });
           subscription.removeAllListeners('message');
         });
       });
@@ -462,27 +462,6 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         expect(receivedMessages).toEqual([]);
       });
 
-      it('should redeliver a message if it was nacked', async () => {
-        const [topic] = await pubsub.createTopic('topic1');
-        const [subscription] = await topic.createSubscription('sub1');
-
-        const receivedMessages: Message[] = [];
-        let nackedOnce = false;
-        subscription.on('message', (message) => {
-          receivedMessages.push(message);
-          if (!nackedOnce) {
-            nackedOnce = true;
-            message.nack();
-          }
-        });
-        await topic.publish(Buffer.from('message-data'));
-
-        await waitForExpect(() => expect(receivedMessages.length).toBe(2));
-        expect(receivedMessages[0]?.data.toString()).toEqual('message-data');
-        expect(receivedMessages[1]?.data.toString()).toEqual('message-data');
-        subscription.removeAllListeners('message');
-      });
-
       it('should call all listeners randomly when more are attached to a single subscription', async () => {
         const [topic] = await pubsub.createTopic('topic1');
         const [subscription] = await topic.createSubscription('sub1');
@@ -503,6 +482,101 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         expect(receivedMessages1.length).toBeGreaterThan(1);
         expect(receivedMessages2.length).toBeGreaterThan(1);
         subscription.removeAllListeners();
+      });
+    });
+
+    describe('message object', () => {
+      it('has expected shape', async () => {
+        const [topic] = await pubsub.createTopic('topic1');
+        const [subscription] = await topic.createSubscription('sub1');
+
+        const receivedMessages: Message[] = [];
+        subscription.on('message', (message) => receivedMessages.push(message));
+
+        await topic.publish(Buffer.from('Test message!'), { kacsa: 'hap' });
+
+        await waitForExpect(() =>
+          expect(receivedMessages.length).toBeGreaterThan(0),
+        );
+        const message = receivedMessages[0];
+        expectToBeDefined(message);
+
+        /**
+         * @NOTE can't assert against the full message object due to the following error:
+         * HTTP/2 sockets should not be directly manipulated (e.g. read and written)
+         */
+
+        expect(message.ackId).toEqual(
+          expect.stringContaining(`projects/${projectId}/subscriptions/sub1:`),
+        );
+        expect(message.attributes).toEqual({ kacsa: 'hap' });
+        expect(message.data).toEqual(expect.any(Buffer));
+        expect(message.length).toBe(message.data.length);
+        expect(message.deliveryAttempt).toBe(0);
+        expect(message.publishTime).toEqual(expect.any(Date));
+        expect(message.id).toEqual(expect.any(String));
+        expect(message.received).toEqual(expect.any(Number));
+        expect(message.isExactlyOnceDelivery).toBe(false);
+
+        expect(message.endParentSpan).toEqual(expect.any(Function));
+        expect(message.ack).toEqual(expect.any(Function));
+        expect(message.ackFailed).toEqual(expect.any(Function));
+        expect(message.ackWithResponse).toEqual(expect.any(Function));
+        expect(message.nack).toEqual(expect.any(Function));
+        expect(message.nackWithResponse).toEqual(expect.any(Function));
+        expect(message.modAck).toEqual(expect.any(Function));
+        expect(message.modAckWithResponse).toEqual(expect.any(Function));
+
+        subscription.removeAllListeners('message');
+      });
+
+      describe('.nack method', () => {
+        it('should redeliver a message', async () => {
+          const [topic] = await pubsub.createTopic('topic1');
+          const [subscription] = await topic.createSubscription('sub1');
+
+          const receivedMessages: Message[] = [];
+          let nackedOnce = false;
+          subscription.on('message', (message) => {
+            receivedMessages.push(message);
+            if (!nackedOnce) {
+              nackedOnce = true;
+              message.nack();
+            }
+          });
+          await topic.publish(Buffer.from('message-data'));
+
+          await waitForExpect(() => expect(receivedMessages.length).toBe(2));
+          expect(receivedMessages[0]?.data.toString()).toBe('message-data');
+          expect(receivedMessages[1]?.data.toString()).toBe('message-data');
+          subscription.removeAllListeners('message');
+        });
+      });
+
+      describe('.nackWithResponse method', () => {
+        it('should redeliver a message', async () => {
+          const [topic] = await pubsub.createTopic('topic1');
+          const [subscription] = await topic.createSubscription('sub1');
+
+          const receivedMessages: Message[] = [];
+          let nackResponse: string = '';
+          let nackedOnce = false;
+          subscription.on('message', async (message) => {
+            receivedMessages.push(message);
+            if (!nackedOnce) {
+              nackedOnce = true;
+              nackResponse = await message.nackWithResponse();
+            }
+          });
+          await topic.publish(Buffer.from('message-data'));
+
+          await waitForExpect(() => expect(receivedMessages.length).toBe(2));
+          expect(receivedMessages[0]?.data.toString()).toBe('message-data');
+          expect(receivedMessages[1]?.data.toString()).toBe('message-data');
+          expect(nackResponse).toBe('SUCCESS');
+
+          subscription.removeAllListeners('message');
+        });
       });
     });
   });
