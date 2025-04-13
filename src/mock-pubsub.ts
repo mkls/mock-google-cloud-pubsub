@@ -213,6 +213,7 @@ function createSubscription(name: string): MockSubscription {
         id: makeFourDigitString(),
         received: Date.now(),
         isExactlyOnceDelivery: false,
+        orderingKey: '',
 
         endParentSpan: () => {},
         ack: () => {},

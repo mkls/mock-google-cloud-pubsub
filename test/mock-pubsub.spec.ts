@@ -517,6 +517,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         expect(message.id).toEqual(expect.any(String));
         expect(message.received).toEqual(expect.any(Number));
         expect(message.isExactlyOnceDelivery).toBe(false);
+        expect(message.orderingKey).toBe('');
 
         expect(message.endParentSpan).toEqual(expect.any(Function));
         expect(message.ack).toEqual(expect.any(Function));
