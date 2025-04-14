@@ -349,82 +349,140 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
 
     describe('publishing and consuming messages', () => {
       describe('topic.publish', () => {
-        it('should send message to expected topic subscriber', async () => {
+        it('should send message to all expected topic subscribers', async () => {
           const [topic] = await pubsub.createTopic('topic1');
-          const [subscription] = await topic.createSubscription('sub1');
+          const [subscription1] = await topic.createSubscription('sub1');
+          const [subscription2] = await topic.createSubscription('sub2');
 
-          const receivedMessages: Message[] = [];
-          subscription.on('message', (message) =>
-            receivedMessages.push(message),
+          const receivedMessages1: Message[] = [];
+          const receivedMessages2: Message[] = [];
+          subscription1.on('message', (message) =>
+            receivedMessages1.push(message),
+          );
+          subscription2.on('message', (message) =>
+            receivedMessages2.push(message),
           );
 
-          await topic.publish(Buffer.from('Test message!'), { kacsa: 'hap' });
+          const messageId = await topic.publish(Buffer.from('Test message!'), {
+            kacsa: 'hap',
+          });
 
-          await waitForExpect(() =>
-            expect(receivedMessages.length).toBeGreaterThan(0),
-          );
-          const message = receivedMessages[0];
+          await waitForExpect(() => {
+            expect(receivedMessages1.length).toBeGreaterThan(0);
+            expect(receivedMessages2.length).toBeGreaterThan(0);
+          });
+          const message1 = receivedMessages1[0];
+          const message2 = receivedMessages2[0];
 
-          expectToBeDefined(message);
-          expect(message.data.toString()).toEqual('Test message!');
-          expect(message.attributes).toEqual({ kacsa: 'hap' });
-          subscription.removeAllListeners('message');
+          expectToBeDefined(message1);
+          expectToBeDefined(message2);
+          expect(message1.data.toString()).toEqual('Test message!');
+          expect(message2.data.toString()).toEqual('Test message!');
+
+          expect(message1.attributes).toEqual({ kacsa: 'hap' });
+          expect(message1.attributes).toEqual(message2.attributes);
+
+          expect(message1.id).toBe(messageId);
+          expect(message1.id).toBe(message2.id);
+          expect(message1.ackId).not.toBe(message2.ackId);
+
+          subscription1.removeAllListeners('message');
+          subscription2.removeAllListeners('message');
+        });
+
+        describe('no registered subscriptions', () => {
+          it('returns expected message id anyway', async () => {
+            const [topic] = await pubsub.createTopic('topic1');
+            const messageId = await topic.publish(Buffer.from('Test message!'));
+
+            expect(messageId).toEqual(expect.any(String));
+          });
         });
       });
 
-      describe('topic.publishMessage({data: Buffer})', () => {
-        it('should send message to expected topic subscriber', async () => {
-          const [topic] = await pubsub.createTopic('topic1');
-          const [subscription] = await topic.createSubscription('sub1');
+      describe('topic.publishMessage', () => {
+        describe('with ({data: Buffer})', () => {
+          it('should send message to all expected topic subscribers', async () => {
+            const [topic] = await pubsub.createTopic('topic1');
+            const [subscription1] = await topic.createSubscription('sub1');
+            const [subscription2] = await topic.createSubscription('sub2');
 
-          const receivedMessages: Message[] = [];
-          subscription.on('message', (message) =>
-            receivedMessages.push(message),
-          );
+            const receivedMessages1: Message[] = [];
+            const receivedMessages2: Message[] = [];
+            subscription1.on('message', (message) =>
+              receivedMessages1.push(message),
+            );
+            subscription2.on('message', (message) =>
+              receivedMessages2.push(message),
+            );
 
-          await topic.publishMessage({
-            data: Buffer.from('Test message!'),
-            attributes: { kacsa: 'hap' },
+            const messageId = await topic.publishMessage({
+              data: Buffer.from('Test message!'),
+              attributes: { kacsa: 'hap' },
+            });
+
+            await waitForExpect(() => {
+              expect(receivedMessages1.length).toBeGreaterThan(0);
+              expect(receivedMessages2.length).toBeGreaterThan(0);
+            });
+            const message1 = receivedMessages1[0];
+            const message2 = receivedMessages2[0];
+
+            expectToBeDefined(message1);
+            expectToBeDefined(message2);
+            expect(message1.data.toString()).toEqual('Test message!');
+            expect(message2.data.toString()).toEqual('Test message!');
+
+            expect(message1.attributes).toEqual({ kacsa: 'hap' });
+            expect(message1.attributes).toEqual(message2.attributes);
+
+            expect(message1.id).toBe(messageId);
+            expect(message1.id).toBe(message2.id);
+            expect(message1.ackId).not.toBe(message2.ackId);
+
+            subscription1.removeAllListeners('message');
+            subscription2.removeAllListeners('message');
           });
-
-          await waitForExpect(() =>
-            expect(receivedMessages.length).toBeGreaterThan(0),
-          );
-          const message = receivedMessages[0];
-
-          expectToBeDefined(message);
-          expect(message.data.toString()).toEqual('Test message!');
-          expect(message.attributes).toEqual({ kacsa: 'hap' });
-          subscription.removeAllListeners('message');
         });
-      });
 
-      describe('topic.publishMessage({json: String})', () => {
-        it('should send message to expected topic subscriber', async () => {
-          const [topic] = await pubsub.createTopic('topic1');
-          const [subscription] = await topic.createSubscription('sub1');
+        describe('with ({json: String})', () => {
+          it('should send message to all expected topic subscribers', async () => {
+            const [topic] = await pubsub.createTopic('topic1');
+            const [subscription] = await topic.createSubscription('sub1');
 
-          const receivedMessages: Message[] = [];
-          subscription.on('message', (message) =>
-            receivedMessages.push(message),
-          );
+            const receivedMessages: Message[] = [];
+            subscription.on('message', (message) =>
+              receivedMessages.push(message),
+            );
 
-          await topic.publishMessage({
-            json: { data: 'Test message!' },
-            attributes: { kacsa: 'hap' },
+            await topic.publishMessage({
+              json: { data: 'Test message!' },
+              attributes: { kacsa: 'hap' },
+            });
+
+            await waitForExpect(() =>
+              expect(receivedMessages.length).toBeGreaterThan(0),
+            );
+            const message = receivedMessages[0];
+
+            expectToBeDefined(message);
+            expect(JSON.parse(message.data.toString())).toEqual({
+              data: 'Test message!',
+            });
+            expect(message.attributes).toEqual({ kacsa: 'hap' });
+            subscription.removeAllListeners('message');
           });
+        });
 
-          await waitForExpect(() =>
-            expect(receivedMessages.length).toBeGreaterThan(0),
-          );
-          const message = receivedMessages[0];
+        describe('no registered subscriptions', () => {
+          it('returns expected message id anyway', async () => {
+            const [topic] = await pubsub.createTopic('topic1');
+            const messageId = await topic.publishMessage({
+              json: { data: 'Test message!' },
+            });
 
-          expectToBeDefined(message);
-          expect(JSON.parse(message.data.toString())).toEqual({
-            data: 'Test message!',
+            expect(messageId).toEqual(expect.any(String));
           });
-          expect(message.attributes).toEqual({ kacsa: 'hap' });
-          subscription.removeAllListeners('message');
         });
       });
 
@@ -512,9 +570,8 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
          * @NOTE can't assert against the full message object due to the following error:
          * HTTP/2 sockets should not be directly manipulated (e.g. read and written)
          */
-
-        expect(message.ackId).toEqual(
-          expect.stringContaining(`projects/${projectId}/subscriptions/sub1:`),
+        expect(message.ackId).toMatch(
+          new RegExp(`^projects/${projectId}/subscriptions/sub1:\\d+$`),
         );
         expect(message.attributes).toEqual({ kacsa: 'hap' });
         expect(message.data).toEqual(expect.any(Buffer));
@@ -524,6 +581,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         expect(message.id).toEqual(expect.any(String));
         expect(message.received).toEqual(expect.any(Number));
         expect(message.isExactlyOnceDelivery).toBe(false);
+        expect(message.orderingKey).toBe('');
 
         expect(message.endParentSpan).toEqual(expect.any(Function));
         expect(message.ack).toEqual(expect.any(Function));

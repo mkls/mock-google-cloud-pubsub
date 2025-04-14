@@ -17,14 +17,15 @@ import {
   nonExisitingTopic,
   nonExisitingSubscription,
   emptyResponse,
-  makeFourDigitString,
+  makeSequentialNumberString,
 } from './utils';
 
 type MockSubscription = Subscription & {
-  _createMessage: (
-    data: Message['data'] | Uint8Array | string | null | undefined,
-    attributes?: Message['attributes'],
-  ) => Message;
+  _createMessage: (input: {
+    id: string;
+    dataInput: Message['data'] | Uint8Array | string | null | undefined;
+    attributes?: Message['attributes'];
+  }) => Message;
   _queueMessage: (message: Message) => void;
 };
 
@@ -112,23 +113,26 @@ function createTopic(projectId: string, name: string): Topic {
     },
     async publish(data, attributes) {
       await delay(5);
+      const messageId = makeSequentialNumberString();
       topicSubscriptionNames.forEach((name) => {
         const subscription = subscriptions[name];
         if (subscription) {
-          const message = subscription._createMessage(
-            data,
+          const message = subscription._createMessage({
+            id: messageId,
+            dataInput: data,
             // Currently not supporting callback api
-            typeof attributes === 'function' ? undefined : attributes,
-          );
+            attributes:
+              typeof attributes === 'function' ? undefined : attributes,
+          });
           subscription._queueMessage(message);
         }
       });
 
-      // @TODO return expected orderingKey value
-      return 'orderingKey';
+      return messageId;
     },
     async publishMessage(messageOptions) {
       await delay(5);
+      const messageId = makeSequentialNumberString();
       const data = messageOptions.json
         ? JSON.stringify(messageOptions.json)
         : messageOptions.data;
@@ -137,13 +141,16 @@ function createTopic(projectId: string, name: string): Topic {
       topicSubscriptionNames.forEach((name) => {
         const subscription = subscriptions[name];
         if (subscription) {
-          const message = subscription._createMessage(data, attributes);
+          const message = subscription._createMessage({
+            id: messageId,
+            dataInput: data,
+            attributes,
+          });
           subscription._queueMessage(message);
         }
       });
 
-      // @TODO return expected orderingKey value
-      return 'orderingKey';
+      return messageId;
     },
     setPublishOptions() {},
     subscription(subscriptionName: string) {
@@ -195,7 +202,7 @@ function createSubscription(name: string): MockSubscription {
       return subscription;
     },
     async close() {},
-    _createMessage(dataInput, attributes = {}) {
+    _createMessage({ id, dataInput, attributes = {} }) {
       // Currently not handling dataInput as Uint8Array<ArrayBufferLike>
       const data = Buffer.isBuffer(dataInput)
         ? dataInput
@@ -203,16 +210,17 @@ function createSubscription(name: string): MockSubscription {
 
       // https://cloud.google.com/nodejs/docs/reference/pubsub/latest/pubsub/message
       const message: Message = {
-        ackId: `${name}:${makeFourDigitString()}`,
+        ackId: `${name}:${makeSequentialNumberString()}`,
         attributes,
         data,
         length: data.length,
         deliveryAttempt: 0,
         // @ts-expect-error This should be actually a GCP PreciseDate instance
         publishTime: new Date(),
-        id: makeFourDigitString(),
+        id,
         received: Date.now(),
         isExactlyOnceDelivery: false,
+        orderingKey: '',
 
         endParentSpan: () => {},
         ack: () => {},
