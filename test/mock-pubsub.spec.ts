@@ -46,6 +46,13 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
       await clearPubSubInstance(pubsub);
     });
 
+    describe('no constructor options', () => {
+      it('initializes pub sub with projectId === "{{projectId}}"', async () => {
+        const pubsub = new PubSubClass();
+        expect(pubsub.projectId).toBe('{{projectId}}');
+      });
+    });
+
     describe('creating, listing and deleting topics and subscriptions', () => {
       describe('createTopic', () => {
         describe('with name', () => {
@@ -521,11 +528,11 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         expect(message.endParentSpan).toEqual(expect.any(Function));
         expect(message.ack).toEqual(expect.any(Function));
         expect(message.ackFailed).toEqual(expect.any(Function));
-        expect(message.ackWithResponse).toEqual(expect.any(Function));
+        expect(await message.ackWithResponse()).toBe('SUCCESS');
         expect(message.nack).toEqual(expect.any(Function));
         expect(message.nackWithResponse).toEqual(expect.any(Function));
         expect(message.modAck).toEqual(expect.any(Function));
-        expect(message.modAckWithResponse).toEqual(expect.any(Function));
+        expect(await message.modAckWithResponse(1)).toBe('SUCCESS');
 
         subscription.removeAllListeners('message');
       });
@@ -559,13 +566,12 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           const [subscription] = await topic.createSubscription('sub1');
 
           const receivedMessages: Message[] = [];
-          let nackResponse: string = '';
           let nackedOnce = false;
           subscription.on('message', async (message) => {
             receivedMessages.push(message);
             if (!nackedOnce) {
               nackedOnce = true;
-              nackResponse = await message.nackWithResponse();
+              await message.nackWithResponse();
             }
           });
           await topic.publish(Buffer.from('message-data'));
@@ -573,7 +579,6 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           await waitForExpect(() => expect(receivedMessages.length).toBe(2));
           expect(receivedMessages[0]?.data.toString()).toBe('message-data');
           expect(receivedMessages[1]?.data.toString()).toBe('message-data');
-          expect(nackResponse).toBe('SUCCESS');
 
           subscription.removeAllListeners('message');
         });

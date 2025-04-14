@@ -43,7 +43,7 @@ function getSubscription(
 class PubSub implements RealPubSub {
   projectId: string;
 
-  constructor({ projectId = 'mock-project-id' } = {}) {
+  constructor({ projectId = '{{projectId}}' } = {}) {
     this.projectId = projectId;
   }
 
