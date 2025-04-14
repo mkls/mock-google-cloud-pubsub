@@ -19,13 +19,9 @@ import {
   emptyResponse,
   makeSequentialNumberString,
 } from './utils';
+import { createMessage } from './message';
 
-type MockSubscription = Subscription & {
-  _createMessage: (input: {
-    id: string;
-    dataInput: Message['data'] | Uint8Array | string | null | undefined;
-    attributes?: Message['attributes'];
-  }) => Message;
+export type MockSubscription = Subscription & {
   _queueMessage: (message: Message) => void;
 };
 
@@ -117,13 +113,15 @@ function createTopic(projectId: string, name: string): Topic {
       topicSubscriptionNames.forEach((name) => {
         const subscription = subscriptions[name];
         if (subscription) {
-          const message = subscription._createMessage({
+          const message = createMessage({
             id: messageId,
+            subscription: subscription,
             dataInput: data,
             // Currently not supporting callback api
             attributes:
               typeof attributes === 'function' ? undefined : attributes,
           });
+
           subscription._queueMessage(message);
         }
       });
@@ -141,8 +139,9 @@ function createTopic(projectId: string, name: string): Topic {
       topicSubscriptionNames.forEach((name) => {
         const subscription = subscriptions[name];
         if (subscription) {
-          const message = subscription._createMessage({
+          const message = createMessage({
             id: messageId,
+            subscription: subscription,
             dataInput: data,
             attributes,
           });
@@ -202,46 +201,6 @@ function createSubscription(name: string): MockSubscription {
       return subscription;
     },
     async close() {},
-    _createMessage({ id, dataInput, attributes = {} }) {
-      // Currently not handling dataInput as Uint8Array<ArrayBufferLike>
-      const data = Buffer.isBuffer(dataInput)
-        ? dataInput
-        : Buffer.from(typeof dataInput === 'string' ? dataInput : '');
-
-      // https://cloud.google.com/nodejs/docs/reference/pubsub/latest/pubsub/message
-      const message: Message = {
-        ackId: `${name}:${makeSequentialNumberString()}`,
-        attributes,
-        data,
-        length: data.length,
-        deliveryAttempt: 0,
-        // @ts-expect-error This should be actually a GCP PreciseDate instance
-        publishTime: new Date(),
-        id,
-        received: Date.now(),
-        isExactlyOnceDelivery: false,
-        orderingKey: '',
-
-        endParentSpan: () => {},
-        ack: () => {},
-        ackFailed: (error) => {},
-        ackWithResponse: async () => 'SUCCESS',
-        nack: () => {
-          setTimeout(() => {
-            subscription._queueMessage(message);
-          }, 10);
-        },
-        nackWithResponse: async () => {
-          setTimeout(() => {
-            subscription._queueMessage(message);
-          }, 10);
-          return 'SUCCESS';
-        },
-        modAck: (deadline) => {},
-        modAckWithResponse: async (deadline) => 'SUCCESS',
-      };
-      return message;
-    },
     _queueMessage(message) {
       messageQueue.push(message);
       processMessageQueue();
