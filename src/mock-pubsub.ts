@@ -2,7 +2,6 @@ import type {
   PubSub as RealPubSub,
   Subscription,
   Topic,
-  Message,
   CreateSubscriptionResponse,
   GetTopicsResponse,
   GetSubscriptionsResponse,
@@ -11,7 +10,6 @@ import type {
 import {
   delay,
   libError,
-  pickRandom,
   makeTopicName,
   makeSubscriptionName,
   nonExisitingTopic,
@@ -20,10 +18,7 @@ import {
   makeSequentialNumberString,
 } from './utils';
 import { createMessage } from './message';
-
-export type MockSubscription = Subscription & {
-  _queueMessage: (message: Message) => void;
-};
+import { createSubscription, type MockSubscription } from './subscription';
 
 const topics: Record<string, Topic> = {};
 const subscriptions: Record<string, MockSubscription> = {};
@@ -100,7 +95,12 @@ function createTopic(projectId: string, name: string): Topic {
         throw libError(6, 'ALREADY_EXISTS: Subscription already exists');
       }
 
-      const subscription = createSubscription(name);
+      const subscription = createSubscription({
+        name,
+        onDelete: () => {
+          delete subscriptions[name];
+        },
+      });
       subscriptions[name] = subscription;
       topicSubscriptionNames.push(name);
 
@@ -158,56 +158,6 @@ function createTopic(projectId: string, name: string): Topic {
   };
 
   return topic;
-}
-
-function createSubscription(name: string): MockSubscription {
-  type Listener = (message: Message) => void;
-  const listeners: Listener[] = [];
-  const messageQueue: Message[] = [];
-
-  function processMessageQueue() {
-    if (!listeners.length) {
-      return;
-    }
-    messageQueue.forEach((message) => {
-      const listener = pickRandom(listeners);
-      if (listener) {
-        listener(message);
-      }
-    });
-
-    messageQueue.length = 0;
-  }
-
-  // @ts-expect-error incomplete Subscription implementation
-  const subscription: MockSubscription = {
-    name,
-    async delete() {
-      delete subscriptions[name];
-      return emptyResponse;
-    },
-    on(eventName, listener) {
-      if (eventName !== 'message') {
-        return subscription;
-      }
-
-      // @ts-expect-error currently supporting only "message" listeners
-      listeners.push(listener);
-      processMessageQueue();
-      return subscription;
-    },
-    removeAllListeners() {
-      listeners.length = 0;
-      return subscription;
-    },
-    async close() {},
-    _queueMessage(message) {
-      messageQueue.push(message);
-      processMessageQueue();
-    },
-  };
-
-  return subscription;
 }
 
 export { PubSub };

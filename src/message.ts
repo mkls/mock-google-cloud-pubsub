@@ -1,6 +1,6 @@
 import type { Message } from '@google-cloud/pubsub';
-import type { MockSubscription } from './mock-pubsub';
 import { makeSequentialNumberString } from './utils';
+import type { MockSubscription } from './subscription';
 
 export function createMessage({
   id,
