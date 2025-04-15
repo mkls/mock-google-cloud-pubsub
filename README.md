@@ -4,28 +4,25 @@
 [![Npm version][npm-version-badge]][npm]
 [![Coveralls][coveralls-badge]][coveralls]
 
-The goal of this project is to create an in memory emulator for Google Cloud Pub/Sub so this module
-can be used interchangeably with `@google-cloud/pubsub` in integration tests for faster test execution.
+The goal of this project is to develop an in-memory emulator for Google Cloud Pub/Sub, enabling this module to be used as a drop-in replacement for `@google-cloud/pubsub` in integration tests.
 
-As an alternative to this package, you could also use a pubsub emulator docker image
-(eg https://github.com/marcelcorso/gcloud-pubsub-emulator). This package is recomended
-if the emulator is still not fast enough for you.
+As an alternative to this package, you may consider using a [Pub/Sub emulator Docker image](https://github.com/marcelcorso/gcloud-pubsub-emulator). However, this package is recommended if the Docker-based emulator does not meet your performance requirements.
 
 ## Feature set
 
-Only parts of the official API (https://googleapis.dev/nodejs/pubsub/latest/PubSub.html) are
-covered with this package. A simple example like the one below would work, but you will have
-to check if more complicated use cases are covered or not.
+This package implements a subset of the [official Pub/Sub API](https://googleapis.dev/nodejs/pubsub/latest/PubSub.html). While simple use cases—such as the example shown below—are supported, you should verify compatibility with more complex scenarios as needed.
 
 ```js
-const { PubSub } = require('mock-google-cloud-pubsub');
-const pubsub = new PubSub({});
+import { PubSub } from 'mock-google-cloud-pubsub';
+const pubsub = new PubSub();
 
 const [topic] = await pubsub.createTopic(topicName);
 const [subscription] = await topic.createSubscription(subscriptionName);
+
 subscription.on('message', (message) => {
   console.log('Received message:', message.data.toString());
 });
+
 topic.publish(Buffer.from('Test message!'));
 ```
 
@@ -33,20 +30,56 @@ Pull request for covering more features are welcome, just make sure to write tes
 
 ## Usage
 
-Intead of using the real thing, simply use the mocked pubsub package whenever you are in integration test.
+Instead of using the actual `@google-cloud/pubsub` package, replace it with `mock-google-cloud-pubsub` during integration testing:
 
 ```js
-const { PubSub } = require('@google-cloud/pubsub')
-const { PubSub: MockPubSub } = require('mock-google-cloud-pubsub')
+import { PubSub } from '@google-cloud/pubsub'
+import { PubSub: MockPubSub } from 'mock-google-cloud-pubsub'
 
 const pubsub = process.env.NODE_ENV !== 'test' ? new PubSub({ ... }) : new MockPubSub()
 ```
 
+### TypeScript
+
+Although fully written in TypeScript, `mock-google-cloud-pubsub` does not currently expose type definitions. The suggestion is to type cast the expected `@google-cloud/pubsub` types:
+
+```ts
+// @ts-expect-error mock-google-cloud-pubsub does not expose type definitions
+import { PubSub as PubSubMock } from 'mock-google-cloud-pubsub';
+import type { ClientConfig, PubSub } from '@google-cloud/pubsub';
+
+export function makeMockedPubSub({
+  options,
+}: {
+  options: ClientConfig;
+}): PubSub {
+  const pubSub = new PubSubMock(options);
+  return pubSub;
+}
+```
+
 ## Changelog
+
+### 3.0.0
+
+- scope `getTopics` and `getSubscriptions` to their own pubsub instance
+
+#### New Features
+
+- `publish` and `publishMessage` return expected message id
+- `pubsub.createTopic()` and `topic.createSubscription()` accept full path name
+- complete message object mock
+
+#### Breaking Changes
+
+- `PubSub` constructor defaults `options.projectId` to `{{projectId}}`
+- Update `@google-cloud/pubsub` to v4
 
 ### 2.1.0
 
-- partial support for topic.publishMessage
+#### New Features
+
+- partial support for `topic.publishMessage`
 
 ### 2.0.0
 
