@@ -42,6 +42,36 @@ const { PubSub: MockPubSub } = require('mock-google-cloud-pubsub')
 const pubsub = process.env.NODE_ENV !== 'test' ? new PubSub({ ... }) : new MockPubSub()
 ```
 
+### Inspect or mock Message
+
+You can inspect the message emitted by the mocked pubsub package.
+You can do the following:
+
+```js
+// if you use jest
+const inspectMessage = jest.fn();
+const mockAck = jest.fn();
+
+const mockPubsub = new MockPubSub(
+  {},
+  {
+    interceptMessage: (msg) => {
+      //
+      inspectMessage(msg);
+
+      // override the default ack function
+      msg.ack = mockAck;
+
+      // or spy it
+      jest.spyOn(msg, 'ack');
+
+      // remember to alaways return a Message instance
+      return msg;
+    },
+  },
+);
+```
+
 ## Changelog
 
 ### 2.1.0

@@ -6,6 +6,7 @@ import type {
   GetTopicsResponse,
   GetSubscriptionsResponse,
   CreateTopicResponse,
+  Message,
 } from '@google-cloud/pubsub';
 import {
   delay,
@@ -34,9 +35,14 @@ function getSubscription(
 // @ts-expect-error partial PubSub implementation
 class PubSub implements RealPubSub {
   projectId: string;
+  interceptMessage: (msg: Message) => Message;
 
-  constructor({ projectId = '{{projectId}}' } = {}) {
+  constructor(
+    { projectId = '{{projectId}}' } = {},
+    { interceptMessage = (msg: Message) => msg } = {},
+  ) {
     this.projectId = projectId;
+    this.interceptMessage = interceptMessage;
   }
 
   async getTopics() {
@@ -62,7 +68,11 @@ class PubSub implements RealPubSub {
     if (topics[name]) {
       throw libError(6, 'ALREADY_EXISTS: Topic already exists');
     }
-    const topic = createTopic(this.projectId, name);
+    const topic = createTopic({
+      projectId: this.projectId,
+      name,
+      interceptMessage: this.interceptMessage,
+    });
     topics[name] = topic;
 
     const response: CreateTopicResponse = [topic, {}];
@@ -79,18 +89,25 @@ class PubSub implements RealPubSub {
   }
 }
 
-function createTopic(projectId: string, name: string): Topic {
+function createTopic(opts: {
+  projectId: string;
+  name: string;
+  interceptMessage: (message: Message) => Message;
+}): Topic {
   const topicSubscriptionNames: string[] = [];
 
   // @ts-expect-error partial Topic implementation
   const topic: Topic = {
-    name,
+    name: opts.name,
     async delete() {
-      delete topics[name];
+      delete topics[opts.name];
       return emptyResponse;
     },
     async createSubscription(subscriptionName: string, options: object) {
-      const name = makeSubscriptionName({ projectId, subscriptionName });
+      const name = makeSubscriptionName({
+        projectId: opts.projectId,
+        subscriptionName,
+      });
       if (subscriptions[name]) {
         throw libError(6, 'ALREADY_EXISTS: Subscription already exists');
       }
@@ -122,7 +139,7 @@ function createTopic(projectId: string, name: string): Topic {
               typeof attributes === 'function' ? undefined : attributes,
           });
 
-          subscription._queueMessage(message);
+          subscription._queueMessage(opts.interceptMessage(message));
         }
       });
 
@@ -145,7 +162,7 @@ function createTopic(projectId: string, name: string): Topic {
             dataInput: data,
             attributes,
           });
-          subscription._queueMessage(message);
+          subscription._queueMessage(opts.interceptMessage(message));
         }
       });
 
@@ -153,7 +170,7 @@ function createTopic(projectId: string, name: string): Topic {
     },
     setPublishOptions() {},
     subscription(subscriptionName: string) {
-      return getSubscription(projectId, subscriptionName);
+      return getSubscription(opts.projectId, subscriptionName);
     },
   };
 
