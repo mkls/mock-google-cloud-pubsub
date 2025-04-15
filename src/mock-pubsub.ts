@@ -2,7 +2,6 @@ import type {
   PubSub as RealPubSub,
   Subscription,
   Topic,
-  Message,
   CreateSubscriptionResponse,
   GetTopicsResponse,
   GetSubscriptionsResponse,
@@ -11,7 +10,6 @@ import type {
 import {
   delay,
   libError,
-  pickRandom,
   makeTopicName,
   makeSubscriptionName,
   nonExisitingTopic,
@@ -19,15 +17,8 @@ import {
   emptyResponse,
   makeSequentialNumberString,
 } from './utils';
-
-type MockSubscription = Subscription & {
-  _createMessage: (input: {
-    id: string;
-    dataInput: Message['data'] | Uint8Array | string | null | undefined;
-    attributes?: Message['attributes'];
-  }) => Message;
-  _queueMessage: (message: Message) => void;
-};
+import { createMessage } from './message';
+import { createSubscription, type MockSubscription } from './subscription';
 
 const topics: Record<string, Topic> = {};
 const subscriptions: Record<string, MockSubscription> = {};
@@ -104,7 +95,12 @@ function createTopic(projectId: string, name: string): Topic {
         throw libError(6, 'ALREADY_EXISTS: Subscription already exists');
       }
 
-      const subscription = createSubscription(name);
+      const subscription = createSubscription({
+        name,
+        onDelete: () => {
+          delete subscriptions[name];
+        },
+      });
       subscriptions[name] = subscription;
       topicSubscriptionNames.push(name);
 
@@ -117,13 +113,15 @@ function createTopic(projectId: string, name: string): Topic {
       topicSubscriptionNames.forEach((name) => {
         const subscription = subscriptions[name];
         if (subscription) {
-          const message = subscription._createMessage({
+          const message = createMessage({
             id: messageId,
+            subscription: subscription,
             dataInput: data,
             // Currently not supporting callback api
             attributes:
               typeof attributes === 'function' ? undefined : attributes,
           });
+
           subscription._queueMessage(message);
         }
       });
@@ -141,8 +139,9 @@ function createTopic(projectId: string, name: string): Topic {
       topicSubscriptionNames.forEach((name) => {
         const subscription = subscriptions[name];
         if (subscription) {
-          const message = subscription._createMessage({
+          const message = createMessage({
             id: messageId,
+            subscription: subscription,
             dataInput: data,
             attributes,
           });
@@ -159,96 +158,6 @@ function createTopic(projectId: string, name: string): Topic {
   };
 
   return topic;
-}
-
-function createSubscription(name: string): MockSubscription {
-  type Listener = (message: Message) => void;
-  const listeners: Listener[] = [];
-  const messageQueue: Message[] = [];
-
-  function processMessageQueue() {
-    if (!listeners.length) {
-      return;
-    }
-    messageQueue.forEach((message) => {
-      const listener = pickRandom(listeners);
-      if (listener) {
-        listener(message);
-      }
-    });
-
-    messageQueue.length = 0;
-  }
-
-  // @ts-expect-error incomplete Subscription implementation
-  const subscription: MockSubscription = {
-    name,
-    async delete() {
-      delete subscriptions[name];
-      return emptyResponse;
-    },
-    on(eventName, listener) {
-      if (eventName !== 'message') {
-        return subscription;
-      }
-
-      // @ts-expect-error currently supporting only "message" listeners
-      listeners.push(listener);
-      processMessageQueue();
-      return subscription;
-    },
-    removeAllListeners() {
-      listeners.length = 0;
-      return subscription;
-    },
-    async close() {},
-    _createMessage({ id, dataInput, attributes = {} }) {
-      // Currently not handling dataInput as Uint8Array<ArrayBufferLike>
-      const data = Buffer.isBuffer(dataInput)
-        ? dataInput
-        : Buffer.from(typeof dataInput === 'string' ? dataInput : '');
-
-      // https://cloud.google.com/nodejs/docs/reference/pubsub/latest/pubsub/message
-      const message: Message = {
-        ackId: `${name}:${makeSequentialNumberString()}`,
-        attributes,
-        data,
-        length: data.length,
-        deliveryAttempt: 0,
-        // @ts-expect-error This should be actually a GCP PreciseDate instance
-        publishTime: new Date(),
-        id,
-        received: Date.now(),
-        isExactlyOnceDelivery: false,
-        orderingKey: '',
-
-        endParentSpan: () => {},
-        ack: () => {},
-        ackFailed: (error) => {},
-        ackWithResponse: async () => 'SUCCESS',
-        nack: () => {
-          setTimeout(() => {
-            subscription._queueMessage(message);
-          }, 10);
-        },
-        nackWithResponse: async () => {
-          setTimeout(() => {
-            subscription._queueMessage(message);
-          }, 10);
-          return 'SUCCESS';
-        },
-        modAck: (deadline) => {},
-        modAckWithResponse: async (deadline) => 'SUCCESS',
-      };
-      return message;
-    },
-    _queueMessage(message) {
-      messageQueue.push(message);
-      processMessageQueue();
-    },
-  };
-
-  return subscription;
 }
 
 export { PubSub };
