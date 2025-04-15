@@ -54,7 +54,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
     });
 
     describe('creating, listing and deleting topics and subscriptions', () => {
-      describe('createTopic', () => {
+      describe('pubsub.createTopic()', () => {
         describe('with name', () => {
           it('should create a topic', async () => {
             const topicName = 'topic1';
@@ -117,7 +117,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
-      describe('getTopics', () => {
+      describe('pubsub.getTopics()', () => {
         it('should return list of existing topics for given PubSub instance', async () => {
           const otherProjectId = 'another-project-id';
           const otherPubsub = new PubSubClass({
@@ -156,7 +156,46 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
-      describe('topic.delete', () => {
+      describe('pubsub.topic()', () => {
+        it('should retrieve previously created topics by name', async () => {
+          const topicName1 = 'topic1';
+          const topicName2 = 'topic2';
+          await pubsub.createTopic(topicName1);
+          await pubsub.createTopic(topicName2);
+
+          const topic1 = pubsub.topic(topicName1);
+          const topic2 = pubsub.topic(
+            `projects/${projectId}/topics/${topicName2}`,
+          );
+
+          expect(topic1.name).toBe(
+            `projects/${projectId}/topics/${topicName1}`,
+          );
+          expect(topic2.name).toBe(
+            `projects/${projectId}/topics/${topicName2}`,
+          );
+
+          expect(topic1.publish).toEqual(expect.any(Function));
+          expect(topic1.publishMessage).toEqual(expect.any(Function));
+        });
+
+        describe('non existing topic', () => {
+          it('should return a topic object anyway', async () => {
+            const topic = pubsub.topic('non-existing');
+            expect(topic.name).toBe(
+              `projects/${projectId}/topics/non-existing`,
+            );
+
+            expect(topic.publish).toEqual(expect.any(Function));
+            expect(topic.publishMessage).toEqual(expect.any(Function));
+
+            const [existingTopics] = await pubsub.getTopics();
+            expect(existingTopics).toHaveLength(0);
+          });
+        });
+      });
+
+      describe('topic.delete()', () => {
         it('should delete a topic', async () => {
           await Promise.all([
             pubsub.createTopic('topic1'),
@@ -191,7 +230,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
-      describe('topic.createSubscription', () => {
+      describe('topic.createSubscription()', () => {
         describe('with name', () => {
           it('should create a subscription', async () => {
             const [topic] = await pubsub.createTopic('topic1');
@@ -252,7 +291,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
-      describe('getSubscriptions', () => {
+      describe('pubsub.getSubscriptions()', () => {
         it('should return list of existing subscriptions for given PubSub instance', async () => {
           const otherProjectId = 'another-project-id';
           const otherPubsub = new PubSubClass({
@@ -348,7 +387,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
     });
 
     describe('publishing and consuming messages', () => {
-      describe('topic.publish', () => {
+      describe('topic.publish()', () => {
         it('should send message to all expected topic subscribers', async () => {
           const [topic] = await pubsub.createTopic('topic1');
           const [subscription1] = await topic.createSubscription('sub1');
@@ -400,7 +439,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
-      describe('topic.publishMessage', () => {
+      describe('topic.publishMessage()', () => {
         describe('with ({data: Buffer})', () => {
           it('should send message to all expected topic subscribers', async () => {
             const [topic] = await pubsub.createTopic('topic1');
@@ -595,7 +634,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         subscription.removeAllListeners('message');
       });
 
-      describe('.nack method', () => {
+      describe('.nack()', () => {
         it('should redeliver a message', async () => {
           const [topic] = await pubsub.createTopic('topic1');
           const [subscription] = await topic.createSubscription('sub1');
@@ -618,7 +657,7 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
-      describe('.nackWithResponse method', () => {
+      describe('.nackWithResponse()', () => {
         it('should redeliver a message', async () => {
           const [topic] = await pubsub.createTopic('topic1');
           const [subscription] = await topic.createSubscription('sub1');
