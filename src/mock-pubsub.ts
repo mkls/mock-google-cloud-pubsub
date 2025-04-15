@@ -12,7 +12,6 @@ import {
   libError,
   makeTopicName,
   makeSubscriptionName,
-  nonExisitingTopic,
   nonExisitingSubscription,
   emptyResponse,
   makeSequentialNumberString,
@@ -71,7 +70,7 @@ class PubSub implements RealPubSub {
 
   topic(topicName: string) {
     const name = makeTopicName({ projectId: this.projectId, topicName });
-    return topics[name] || nonExisitingTopic;
+    return topics[name] || createTopic(this.projectId, name);
   }
 
   subscription(subscriptionName: string) {
@@ -86,6 +85,10 @@ function createTopic(projectId: string, name: string): Topic {
   const topic: Topic = {
     name,
     async delete() {
+      if (!topics[name]) {
+        throw libError(5, 'NOT_FOUND: Topic not found');
+      }
+
       delete topics[name];
       return emptyResponse;
     },
