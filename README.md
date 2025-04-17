@@ -66,6 +66,10 @@ export function makeMockedPubSub({
 
 ## Changelog
 
+### 3.0.2
+
+- fix `pubsub.subscription`/`topics.subscription` methods with non existing subscription names
+
 ### 3.0.1
 
 - fix `pubsub.topic` method with non existing topic name
