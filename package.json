@@ -1,6 +1,6 @@
 {
   "name": "mock-google-cloud-pubsub",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "mock @google-cloud/pubsub package in integration tests",
   "main": "dist/mock-pubsub.js",
   "files": [
