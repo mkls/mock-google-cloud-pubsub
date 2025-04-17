@@ -19,15 +19,15 @@ import {
 import { createMessage } from './message';
 import { createSubscription, type MockSubscription } from './subscription';
 
-const topics: Record<string, Topic> = {};
-const subscriptions: Record<string, MockSubscription> = {};
+const topics: Map<string, Topic> = new Map();
+const subscriptions: Map<string, MockSubscription> = new Map();
 
 function getSubscription(
   projectId: string,
   subscriptionName: string,
 ): Subscription {
   const name = makeSubscriptionName({ projectId, subscriptionName });
-  return subscriptions[name] || nonExisitingSubscription;
+  return subscriptions.get(name) || nonExisitingSubscription;
 }
 
 // @ts-expect-error partial PubSub implementation
@@ -39,7 +39,7 @@ class PubSub implements RealPubSub {
   }
 
   async getTopics() {
-    const projectTopics = Object.values(topics).filter((topic) =>
+    const projectTopics = Array.from(topics.values()).filter((topic) =>
       topic.name.startsWith(`projects/${this.projectId}/`),
     );
 
@@ -48,7 +48,7 @@ class PubSub implements RealPubSub {
   }
 
   async getSubscriptions() {
-    const projectSubscriptions = Object.values(subscriptions).filter(
+    const projectSubscriptions = Array.from(subscriptions.values()).filter(
       (subscription) =>
         subscription.name.startsWith(`projects/${this.projectId}/`),
     );
@@ -58,11 +58,11 @@ class PubSub implements RealPubSub {
 
   async createTopic(topicName: string) {
     const name = makeTopicName({ projectId: this.projectId, topicName });
-    if (topics[name]) {
+    if (topics.has(name)) {
       throw libError(6, 'ALREADY_EXISTS: Topic already exists');
     }
     const topic = createTopic(this.projectId, name);
-    topics[name] = topic;
+    topics.set(name, topic);
 
     const response: CreateTopicResponse = [topic, {}];
     return response;
@@ -70,7 +70,7 @@ class PubSub implements RealPubSub {
 
   topic(topicName: string) {
     const name = makeTopicName({ projectId: this.projectId, topicName });
-    return topics[name] || createTopic(this.projectId, name);
+    return topics.get(name) || createTopic(this.projectId, name);
   }
 
   subscription(subscriptionName: string) {
@@ -85,26 +85,23 @@ function createTopic(projectId: string, name: string): Topic {
   const topic: Topic = {
     name,
     async delete() {
-      if (!topics[name]) {
+      if (!topics.has(name)) {
         throw libError(5, 'NOT_FOUND: Topic not found');
       }
 
-      delete topics[name];
+      topics.delete(name);
       return emptyResponse;
     },
     async createSubscription(subscriptionName: string, options: object) {
       const name = makeSubscriptionName({ projectId, subscriptionName });
-      if (subscriptions[name]) {
+      if (subscriptions.has(name)) {
         throw libError(6, 'ALREADY_EXISTS: Subscription already exists');
       }
 
       const subscription = createSubscription({
         name,
-        onDelete: () => {
-          delete subscriptions[name];
-        },
+        subscriptions,
       });
-      subscriptions[name] = subscription;
       topicSubscriptionNames.push(name);
 
       const response: CreateSubscriptionResponse = [subscription, {}];
@@ -114,7 +111,7 @@ function createTopic(projectId: string, name: string): Topic {
       await delay(5);
       const messageId = makeSequentialNumberString();
       topicSubscriptionNames.forEach((name) => {
-        const subscription = subscriptions[name];
+        const subscription = subscriptions.get(name);
         if (subscription) {
           const message = createMessage({
             id: messageId,
@@ -140,7 +137,7 @@ function createTopic(projectId: string, name: string): Topic {
       const attributes = messageOptions.attributes ?? undefined;
 
       topicSubscriptionNames.forEach((name) => {
-        const subscription = subscriptions[name];
+        const subscription = subscriptions.get(name);
         if (subscription) {
           const message = createMessage({
             id: messageId,
