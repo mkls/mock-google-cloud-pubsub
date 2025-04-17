@@ -7,10 +7,10 @@ export type MockSubscription = Subscription & {
 
 export function createSubscription({
   name,
-  onDelete,
+  subscriptions,
 }: {
   name: string;
-  onDelete: () => void;
+  subscriptions: Map<string, MockSubscription>;
 }): MockSubscription {
   type Listener = (message: Message) => void;
   const listeners: Listener[] = [];
@@ -34,7 +34,7 @@ export function createSubscription({
   const subscription: MockSubscription = {
     name,
     async delete() {
-      onDelete();
+      subscriptions.delete(name);
       return emptyResponse;
     },
     on(eventName, listener) {
@@ -58,5 +58,6 @@ export function createSubscription({
     },
   };
 
+  subscriptions.set(name, subscription);
   return subscription;
 }

@@ -100,11 +100,8 @@ function createTopic(projectId: string, name: string): Topic {
 
       const subscription = createSubscription({
         name,
-        onDelete: () => {
-          subscriptions.delete(name);
-        },
+        subscriptions,
       });
-      subscriptions.set(name, subscription);
       topicSubscriptionNames.push(name);
 
       const response: CreateSubscriptionResponse = [subscription, {}];
