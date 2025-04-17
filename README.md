@@ -8,6 +8,12 @@ The goal of this project is to develop an in-memory emulator for Google Cloud Pu
 
 As an alternative to this package, you may consider using a [Pub/Sub emulator Docker image](https://github.com/marcelcorso/gcloud-pubsub-emulator). However, this package is recommended if the Docker-based emulator does not meet your performance requirements.
 
+## Installation
+
+```
+npm install mock-google-cloud-pubsub -D
+```
+
 ## Feature set
 
 This package implements a subset of the [official Pub/Sub API](https://googleapis.dev/nodejs/pubsub/latest/PubSub.html). While simple use cases—such as the example shown below—are supported, you should verify compatibility with more complex scenarios as needed.
@@ -59,6 +65,10 @@ export function makeMockedPubSub({
 ```
 
 ## Changelog
+
+### 3.0.1
+
+- fix `pubsub.topic` method with non existing topic name
 
 ### 3.0.0
 
