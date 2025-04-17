@@ -12,7 +12,6 @@ import {
   libError,
   makeTopicName,
   makeSubscriptionName,
-  nonExisitingSubscription,
   emptyResponse,
   makeSequentialNumberString,
 } from './utils';
@@ -22,12 +21,38 @@ import { createSubscription, type MockSubscription } from './subscription';
 const topics: Record<string, Topic> = {};
 const subscriptions: Record<string, MockSubscription> = {};
 
-function getSubscription(
-  projectId: string,
-  subscriptionName: string,
-): Subscription {
+function getSubscription({
+  projectId,
+  subscriptionName,
+}: {
+  projectId: string;
+  subscriptionName: string;
+}): Subscription {
   const name = makeSubscriptionName({ projectId, subscriptionName });
-  return subscriptions[name] || nonExisitingSubscription;
+  return (
+    subscriptions[name] ||
+    createSubscription({
+      name,
+      onDelete: () => {
+        deleteSubscription({ projectId, subscriptionName });
+      },
+    })
+  );
+}
+
+function deleteSubscription({
+  projectId,
+  subscriptionName,
+}: {
+  projectId: string;
+  subscriptionName: string;
+}) {
+  const name = makeSubscriptionName({ projectId, subscriptionName });
+  if (!subscriptions[name]) {
+    throw libError(5, 'NOT_FOUND: Subscription does not exist');
+  }
+
+  delete subscriptions[name];
 }
 
 // @ts-expect-error partial PubSub implementation
@@ -74,7 +99,7 @@ class PubSub implements RealPubSub {
   }
 
   subscription(subscriptionName: string) {
-    return getSubscription(this.projectId, subscriptionName);
+    return getSubscription({ projectId: this.projectId, subscriptionName });
   }
 }
 
@@ -101,7 +126,7 @@ function createTopic(projectId: string, name: string): Topic {
       const subscription = createSubscription({
         name,
         onDelete: () => {
-          delete subscriptions[name];
+          deleteSubscription({ projectId, subscriptionName });
         },
       });
       subscriptions[name] = subscription;
@@ -156,7 +181,7 @@ function createTopic(projectId: string, name: string): Topic {
     },
     setPublishOptions() {},
     subscription(subscriptionName: string) {
-      return getSubscription(projectId, subscriptionName);
+      return getSubscription({ projectId, subscriptionName });
     },
   };
 
