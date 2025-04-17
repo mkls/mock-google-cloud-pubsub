@@ -1,4 +1,4 @@
-import type { Subscription, EmptyResponse } from '@google-cloud/pubsub';
+import type { EmptyResponse } from '@google-cloud/pubsub';
 
 export function libError(code: number, message: string): Error {
   const error = new Error(`${code} ${message}`);
@@ -60,14 +60,5 @@ export function makeSubscriptionName({
   }
   return `projects/${projectId}/subscriptions/${subscriptionName}`;
 }
-
-// Fake responses
-
-// @ts-expect-error partial Subscription implementation
-export const nonExisitingSubscription: Subscription = {
-  async delete() {
-    throw libError(5, 'NOT_FOUND: Subscription does not exist');
-  },
-};
 
 export const emptyResponse = undefined as unknown as EmptyResponse;

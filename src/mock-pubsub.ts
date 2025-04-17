@@ -12,7 +12,6 @@ import {
   libError,
   makeTopicName,
   makeSubscriptionName,
-  nonExisitingSubscription,
   emptyResponse,
   makeSequentialNumberString,
 } from './utils';
@@ -22,12 +21,23 @@ import { createSubscription, type MockSubscription } from './subscription';
 const topics: Map<string, Topic> = new Map();
 const subscriptions: Map<string, MockSubscription> = new Map();
 
-function getSubscription(
-  projectId: string,
-  subscriptionName: string,
-): Subscription {
+function getSubscription({
+  projectId,
+  subscriptionName,
+}: {
+  projectId: string;
+  subscriptionName: string;
+}): Subscription {
   const name = makeSubscriptionName({ projectId, subscriptionName });
-  return subscriptions.get(name) || nonExisitingSubscription;
+  return (
+    subscriptions.get(name) ||
+    createSubscription({
+      projectId,
+      name,
+      subscriptions,
+      registerSubscription: false,
+    })
+  );
 }
 
 // @ts-expect-error partial PubSub implementation
@@ -74,7 +84,7 @@ class PubSub implements RealPubSub {
   }
 
   subscription(subscriptionName: string) {
-    return getSubscription(this.projectId, subscriptionName);
+    return getSubscription({ projectId: this.projectId, subscriptionName });
   }
 }
 
@@ -99,8 +109,10 @@ function createTopic(projectId: string, name: string): Topic {
       }
 
       const subscription = createSubscription({
+        projectId,
         name,
         subscriptions,
+        registerSubscription: true,
       });
       topicSubscriptionNames.push(name);
 
@@ -153,7 +165,7 @@ function createTopic(projectId: string, name: string): Topic {
     },
     setPublishOptions() {},
     subscription(subscriptionName: string) {
-      return getSubscription(projectId, subscriptionName);
+      return getSubscription({ projectId, subscriptionName });
     },
   };
 
