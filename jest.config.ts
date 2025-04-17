@@ -7,6 +7,7 @@ const config: Config.InitialOptions = {
   collectCoverage: true,
   coverageReporters: ['lcov', 'text'],
   collectCoverageFrom: ['<rootDir>/src/**/*.{ts,js}'],
+  maxWorkers: 1,
 };
 
 export default config;
