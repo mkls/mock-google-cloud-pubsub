@@ -10,6 +10,27 @@ export type MockSubscription = Subscription & {
   _queueMessage: (message: Message) => void;
 };
 
+export function getSubscription({
+  projectId,
+  subscriptionName,
+  subscriptions,
+}: {
+  projectId: string;
+  subscriptionName: string;
+  subscriptions: Map<string, MockSubscription>;
+}): Subscription {
+  const name = makeSubscriptionName({ projectId, subscriptionName });
+  return (
+    subscriptions.get(name) ||
+    createSubscription({
+      projectId,
+      name,
+      subscriptions,
+      registerSubscription: false,
+    })
+  );
+}
+
 export function createSubscription({
   projectId,
   name,
@@ -54,6 +75,7 @@ export function createSubscription({
       subscriptions.delete(subscriptionName);
       return emptyResponse;
     },
+
     on(eventName, listener) {
       if (eventName !== 'message') {
         return subscription;
@@ -64,11 +86,14 @@ export function createSubscription({
       processMessageQueue();
       return subscription;
     },
+
     removeAllListeners() {
       listeners.length = 0;
       return subscription;
     },
+
     async close() {},
+
     _queueMessage(message) {
       messageQueue.push(message);
       processMessageQueue();
@@ -78,5 +103,6 @@ export function createSubscription({
   if (registerSubscription) {
     subscriptions.set(name, subscription);
   }
+
   return subscription;
 }
