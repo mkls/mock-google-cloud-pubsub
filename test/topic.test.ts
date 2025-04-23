@@ -1,7 +1,10 @@
-require('dotenv-haphap').config('confidential.env');
-import { makePubSubInstances, clearPubSubInstance } from './test-utils';
+import {
+  makePubSubInstances,
+  clearPubSubInstance,
+  makeTestConfig,
+} from './test-utils';
 
-const projectId = process.env.GCP_PROJECT_ID;
+const { projectId } = makeTestConfig();
 
 describe('Topic', () => {
   makePubSubInstances({ projectId }).forEach(({ title, pubsub }) => {

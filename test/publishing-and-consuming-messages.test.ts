@@ -1,4 +1,3 @@
-require('dotenv-haphap').config('confidential.env');
 import waitForExpect from 'wait-for-expect';
 import type { Message } from '@google-cloud/pubsub';
 import { delay } from '../src/utils';
@@ -6,9 +5,10 @@ import {
   makePubSubInstances,
   clearPubSubInstance,
   expectToBeDefined,
+  makeTestConfig,
 } from './test-utils';
 
-const projectId = process.env.GCP_PROJECT_ID;
+const { projectId } = makeTestConfig();
 
 describe('Publishing and consuming messages', () => {
   makePubSubInstances({ projectId }).forEach(({ title, pubsub }) => {

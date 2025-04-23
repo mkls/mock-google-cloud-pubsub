@@ -1,9 +1,12 @@
-require('dotenv-haphap').config('confidential.env');
 import type { Message } from '@google-cloud/pubsub';
 import { delay } from '../src/utils';
-import { makePubSubInstances, clearPubSubInstance } from './test-utils';
+import {
+  makePubSubInstances,
+  clearPubSubInstance,
+  makeTestConfig,
+} from './test-utils';
 
-const projectId = process.env.GCP_PROJECT_ID;
+const { projectId } = makeTestConfig();
 
 describe('Subscription', () => {
   makePubSubInstances({ projectId }).forEach(({ title, pubsub }) => {

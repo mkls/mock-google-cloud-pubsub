@@ -1,4 +1,3 @@
-require('dotenv-haphap').config('confidential.env');
 import { PubSub } from '@google-cloud/pubsub';
 import { PubSub as MockPubSub } from '../../src/mock-pubsub';
 
