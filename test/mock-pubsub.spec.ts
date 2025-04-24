@@ -234,10 +234,10 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         describe('with name', () => {
           it('should create a subscription', async () => {
             const [topic] = await pubsub.createTopic('topic1');
-            const [subscription] = await topic.createSubscription('topic1');
+            const [subscription] = await topic.createSubscription('sub1');
 
             expect(subscription.name).toEqual(
-              `projects/${projectId}/subscriptions/topic1`,
+              `projects/${projectId}/subscriptions/sub1`,
             );
           });
         });
@@ -246,11 +246,11 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           it('should create a subscription', async () => {
             const [topic] = await pubsub.createTopic('topic1');
             const [subscription] = await topic.createSubscription(
-              `projects/${projectId}/subscriptions/topic1`,
+              `projects/${projectId}/subscriptions/sub1`,
             );
 
             expect(subscription.name).toEqual(
-              `projects/${projectId}/subscriptions/topic1`,
+              `projects/${projectId}/subscriptions/sub1`,
             );
           });
         });
@@ -333,6 +333,40 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
+      describe('pubsub.subscription()', () => {
+        it('should retrieve previously created subscription by name', async () => {
+          const [topic] = await pubsub.createTopic('topic');
+          await topic.createSubscription('sub1');
+          await topic.createSubscription('sub2');
+
+          const subscription1 = pubsub.subscription('sub1');
+          const subscription2 = pubsub.subscription(
+            `projects/${projectId}/subscriptions/sub2`,
+          );
+
+          expect(subscription1.name).toBe(
+            `projects/${projectId}/subscriptions/sub1`,
+          );
+          expect(subscription2.name).toBe(
+            `projects/${projectId}/subscriptions/sub2`,
+          );
+        });
+
+        describe('non existing subscription', () => {
+          it('should return a subscription object anyway', async () => {
+            const subscription = pubsub.subscription('non-existing');
+
+            expect(subscription.name).toBe(
+              `projects/${projectId}/subscriptions/non-existing`,
+            );
+            expect(subscription.on).toEqual(expect.any(Function));
+
+            const [existingSubscriptions] = await pubsub.getSubscriptions();
+            expect(existingSubscriptions).toHaveLength(0);
+          });
+        });
+      });
+
       describe('subscription.delete', () => {
         it('should delete subscription', async () => {
           const [topic] = await pubsub.createTopic('topic1');
@@ -344,18 +378,6 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
           expect(subscriptions.map((s) => s.name)).toEqual([
             `projects/${projectId}/subscriptions/sub2`,
           ]);
-        });
-
-        it('should delete subscription by its full name', async () => {
-          const [topic] = await pubsub.createTopic('topic1');
-          await topic.createSubscription('sub1');
-
-          await pubsub
-            .subscription(`projects/${projectId}/subscriptions/sub1`)
-            .delete();
-
-          const [subscriptions] = await pubsub.getSubscriptions();
-          expect(subscriptions).toEqual([]);
         });
 
         it('should throw error when deleting a non existing subscription', async () => {
@@ -373,14 +395,22 @@ async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
         });
       });
 
-      describe('topic.subscription', () => {
+      describe('topic.subscription()', () => {
         it('should return subscription through a topic object', async () => {
           const [topic] = await pubsub.createTopic('topic1');
           await topic.createSubscription('sub1');
-          const subscription = pubsub.topic('topic1').subscription('sub1');
+          await topic.createSubscription('sub2');
 
-          expect(subscription.name).toEqual(
+          const subscription1 = topic.subscription('sub1');
+          const subscription2 = topic.subscription(
+            `projects/${projectId}/subscriptions/sub2`,
+          );
+
+          expect(subscription1.name).toEqual(
             `projects/${projectId}/subscriptions/sub1`,
+          );
+          expect(subscription2.name).toEqual(
+            `projects/${projectId}/subscriptions/sub2`,
           );
         });
       });
