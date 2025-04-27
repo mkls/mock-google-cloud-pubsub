@@ -1,10 +1,6 @@
-version: '3'
-
 services:
-  pubsub:
-    container_name: pubsub-for-mock-pubsub
-    image: messagebird/gcloud-pubsub-emulator:latest
-    environment:
-      - PUBSUB_PROJECT1=mock-gcp-project
+  pubsub-emulator:
+    image: google/cloud-sdk:emulators
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8685
     ports:
-      - 8685:8681
+      - 8685:8685

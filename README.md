@@ -6,7 +6,7 @@
 
 The goal of this project is to develop an in-memory emulator for Google Cloud Pub/Sub, enabling this module to be used as a drop-in replacement for `@google-cloud/pubsub` in integration tests.
 
-As an alternative to this package, you may consider using a [Pub/Sub emulator Docker image](https://github.com/marcelcorso/gcloud-pubsub-emulator). However, this package is recommended if the Docker-based emulator does not meet your performance requirements.
+As an alternative to this package, you may consider using a [Pub/Sub emulator Docker image](https://hub.docker.com/r/google/cloud-sdk). However, this package is recommended if the Docker-based emulator does not meet your performance requirements.
 
 ## Installation
 

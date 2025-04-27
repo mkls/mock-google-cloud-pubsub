@@ -192,6 +192,7 @@ describe('Publishing and consuming messages', () => {
           await topic.publish(Buffer.from('message-data'));
         }
 
+        // @NOTE This test in not deterministic and might fail from time to time
         expect(receivedMessages1.length).toBeGreaterThan(1);
         expect(receivedMessages2.length).toBeGreaterThan(1);
         subscription.removeAllListeners();
