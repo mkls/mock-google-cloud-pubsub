@@ -94,6 +94,23 @@ describe('Topic', () => {
         });
       });
 
+      describe('topic.getSubscriptions()', () => {
+        it('should return registered subscriptions for given topic', async () => {
+          const [topic1] = await pubsub.createTopic('topic1');
+          const [topic2] = await pubsub.createTopic('topic2');
+          await topic1.createSubscription('sub1');
+          await topic1.createSubscription('sub2');
+          await topic2.createSubscription('sub3');
+
+          const [topicSubs] = await topic1.getSubscriptions();
+          const topicSubsNames = topicSubs.map(({ name }) => name);
+          expect(topicSubsNames).toEqual([
+            'projects/mock-gcp-project/subscriptions/sub1',
+            'projects/mock-gcp-project/subscriptions/sub2',
+          ]);
+        });
+      });
+
       describe('topic.delete()', () => {
         it('should delete a topic', async () => {
           await Promise.all([

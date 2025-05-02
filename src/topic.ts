@@ -1,4 +1,8 @@
-import type { Topic, CreateSubscriptionResponse } from '@google-cloud/pubsub';
+import type {
+  Topic,
+  CreateSubscriptionResponse,
+  GetTopicSubscriptionsResponse,
+} from '@google-cloud/pubsub';
 import {
   delay,
   libError,
@@ -38,7 +42,9 @@ export function createTopic({
       return emptyResponse;
     },
 
-    async createSubscription(subscriptionName: string, options: object) {
+    async createSubscription(
+      subscriptionName: string,
+    ): Promise<CreateSubscriptionResponse> {
       const name = makeSubscriptionName({ projectId, subscriptionName });
       if (subscriptions.has(name)) {
         throw libError(6, 'ALREADY_EXISTS: Subscription already exists');
@@ -52,8 +58,7 @@ export function createTopic({
       });
       topicSubscriptionNames.push(name);
 
-      const response: CreateSubscriptionResponse = [subscription, {}];
-      return response;
+      return [subscription, {}];
     },
 
     async publish(data, attributes) {
@@ -107,7 +112,16 @@ export function createTopic({
     subscription(subscriptionName: string) {
       return getSubscription({ projectId, subscriptionName, subscriptions });
     },
+
+    async getSubscriptions(): Promise<GetTopicSubscriptionsResponse> {
+      const topicSubscriptions = topicSubscriptionNames
+        .map((name) => subscriptions.get(name))
+        .filter((sub) => sub !== undefined);
+
+      return [topicSubscriptions];
+    },
   };
+  topic.getSubscriptions;
 
   return topic;
 }
