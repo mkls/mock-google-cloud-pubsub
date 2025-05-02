@@ -10,23 +10,22 @@ import {
   emptyResponse,
   makeSequentialNumberString,
 } from './utils';
-import {
-  createSubscription,
-  getSubscription,
-  type MockSubscription,
-} from './subscription';
+import { createSubscription, getSubscription } from './subscription';
 import { createMessage } from './message';
+import type { TestOptions, TopicMap, SubscriptionMap } from './types';
 
 export function createTopic({
   projectId,
   name,
   topics,
   subscriptions,
+  testOptions,
 }: {
   projectId: string;
   name: string;
-  topics: Map<string, Topic>;
-  subscriptions: Map<string, MockSubscription>;
+  topics: TopicMap;
+  subscriptions: SubscriptionMap;
+  testOptions: TestOptions;
 }): Topic {
   const topicSubscriptionNames: string[] = [];
 
@@ -55,6 +54,7 @@ export function createTopic({
         name,
         subscriptions,
         registerSubscription: true,
+        testOptions,
       });
       topicSubscriptionNames.push(name);
 
@@ -74,6 +74,7 @@ export function createTopic({
             // Currently not supporting callback api
             attributes:
               typeof attributes === 'function' ? undefined : attributes,
+            testOptions,
           });
 
           subscription._queueMessage(message);
@@ -99,6 +100,7 @@ export function createTopic({
             subscription: subscription,
             dataInput: data,
             attributes,
+            testOptions,
           });
           subscription._queueMessage(message);
         }
@@ -110,7 +112,12 @@ export function createTopic({
     setPublishOptions() {},
 
     subscription(subscriptionName: string) {
-      return getSubscription({ projectId, subscriptionName, subscriptions });
+      return getSubscription({
+        projectId,
+        subscriptionName,
+        subscriptions,
+        testOptions,
+      });
     },
 
     async getSubscriptions(): Promise<GetTopicSubscriptionsResponse> {

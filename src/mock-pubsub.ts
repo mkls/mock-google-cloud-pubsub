@@ -8,6 +8,7 @@ import type {
 import { libError, makeTopicName } from './utils';
 import { createTopic } from './topic';
 import { getSubscription, type MockSubscription } from './subscription';
+import type { TestOptions } from './types';
 
 const topics: Map<string, Topic> = new Map();
 const subscriptions: Map<string, MockSubscription> = new Map();
@@ -15,9 +16,11 @@ const subscriptions: Map<string, MockSubscription> = new Map();
 // @ts-expect-error partial PubSub implementation
 class PubSub implements RealPubSub {
   projectId: string;
+  #testOptions: TestOptions;
 
-  constructor({ projectId = '{{projectId}}' } = {}) {
+  constructor({ projectId = '{{projectId}}' } = {}, testOptions?: TestOptions) {
     this.projectId = projectId;
+    this.#testOptions = testOptions;
   }
 
   async getTopics() {
@@ -48,6 +51,7 @@ class PubSub implements RealPubSub {
       name,
       topics,
       subscriptions,
+      testOptions: this.#testOptions,
     });
     topics.set(name, topic);
 
@@ -59,7 +63,13 @@ class PubSub implements RealPubSub {
     const name = makeTopicName({ projectId: this.projectId, topicName });
     return (
       topics.get(name) ||
-      createTopic({ projectId: this.projectId, name, topics, subscriptions })
+      createTopic({
+        projectId: this.projectId,
+        name,
+        topics,
+        subscriptions,
+        testOptions: this.#testOptions,
+      })
     );
   }
 
@@ -68,6 +78,7 @@ class PubSub implements RealPubSub {
       projectId: this.projectId,
       subscriptionName,
       subscriptions,
+      testOptions: this.#testOptions,
     });
   }
 }
