@@ -64,40 +64,25 @@ export function makeMockedPubSub({
 }
 ```
 
-## Changelog
+### Tests & introspection
 
-### 3.0.2
+#### Get registered topics:
 
-- fix `pubsub.subscription`/`topics.subscription` methods with non existing subscription names
+```ts
+const [topics] = await pubsub();
+```
 
-### 3.0.1
+#### Get registered subscriptions for given topic:
 
-- fix `pubsub.topic` method with non existing topic name
+```ts
+const [subscriptions] = await topic.getSubscriptions();
+```
 
-### 3.0.0
+#### Get registered subscriptions:
 
-- scope `getTopics` and `getSubscriptions` to their own pubsub instance
-
-#### New Features
-
-- `publish` and `publishMessage` return expected message id
-- `pubsub.createTopic()` and `topic.createSubscription()` accept full path name
-- complete message object mock
-
-#### Breaking Changes
-
-- `PubSub` constructor defaults `options.projectId` to `{{projectId}}`
-- Update `@google-cloud/pubsub` to v4
-
-### 2.1.0
-
-#### New Features
-
-- partial support for `topic.publishMessage`
-
-### 2.0.0
-
-- the `initializeMocker` method was removed, now subscriptions and topics can be created with the regular api methods.
+```ts
+const [subscriptions] = await pubsub.getSubscriptions();
+```
 
 ## Local dev
 
