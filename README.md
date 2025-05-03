@@ -45,6 +45,12 @@ import { PubSub: MockPubSub } from 'mock-google-cloud-pubsub'
 const pubsub = process.env.NODE_ENV !== 'test' ? new PubSub({ ... }) : new MockPubSub()
 ```
 
+## `@google-cloud/pubsub` versions support
+
+| mock-google-cloud-pubsub | @google-cloud/pubsub |
+| ------------------------ | -------------------- |
+| v3.1.0 +                 | v4.X.X -> v5.X.X     |
+
 ## Changelog
 
 ### 3.0.2
