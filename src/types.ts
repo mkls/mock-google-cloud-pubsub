@@ -4,6 +4,10 @@ import type { MockSubscription } from './subscription';
 export type TopicMap = Map<string, Topic>;
 export type SubscriptionMap = Map<string, MockSubscription>;
 
+export type Options = {
+  projectId?: string;
+};
+
 export type TestOptions =
   | {
       interceptors?: {
