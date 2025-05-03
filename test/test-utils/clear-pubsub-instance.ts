@@ -1,5 +1,5 @@
 import { PubSub } from '@google-cloud/pubsub';
-import { PubSub as MockPubSub } from '../../src/mock-pubsub';
+import { PubSub as MockPubSub } from '../../src';
 
 export async function clearPubSubInstance(pubsub: PubSub | MockPubSub) {
   const [topics] = await pubsub.getTopics();
