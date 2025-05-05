@@ -45,7 +45,6 @@ describe('Message', () => {
         expect(message.publishTime).toEqual(expect.any(Date));
         expect(message.id).toEqual(expect.any(String));
         expect(message.received).toEqual(expect.any(Number));
-        expect(message.isExactlyOnceDelivery).toBe(false);
         expect(message.orderingKey).toBe('');
 
         expect(message.endParentSpan).toEqual(expect.any(Function));

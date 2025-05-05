@@ -45,24 +45,11 @@ import { PubSub: MockPubSub } from 'mock-google-cloud-pubsub'
 const pubsub = process.env.NODE_ENV !== 'test' ? new PubSub({ ... }) : new MockPubSub()
 ```
 
-### TypeScript
+## `@google-cloud/pubsub` versions support
 
-Although fully written in TypeScript, `mock-google-cloud-pubsub` does not currently expose type definitions. The suggestion is to type cast the expected `@google-cloud/pubsub` types:
-
-```ts
-// @ts-expect-error mock-google-cloud-pubsub does not expose type definitions
-import { PubSub as PubSubMock } from 'mock-google-cloud-pubsub';
-import type { ClientConfig, PubSub } from '@google-cloud/pubsub';
-
-export function makeMockedPubSub({
-  options,
-}: {
-  options: ClientConfig;
-}): PubSub {
-  const pubSub = new PubSubMock(options);
-  return pubSub;
-}
-```
+| mock-google-cloud-pubsub | @google-cloud/pubsub |
+| ------------------------ | -------------------- |
+| v3.1.0 +                 | v4.X.X -> v5.X.X     |
 
 ### Tests & introspection
 
