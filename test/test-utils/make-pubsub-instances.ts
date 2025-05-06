@@ -1,5 +1,5 @@
 import { PubSub } from '@google-cloud/pubsub';
-import { PubSub as MockPubSub } from '../../src';
+import { PubSub as MockPubSub, PubsubWithInterceptors } from '../../src';
 
 export function makePubSubInstances({ projectId }: { projectId?: string }) {
   return [
@@ -14,6 +14,11 @@ export function makePubSubInstances({ projectId }: { projectId?: string }) {
       title: 'mock PubSub',
       pubsub: new MockPubSub({ projectId }),
       PubSubClass: MockPubSub,
+    },
+    {
+      title: 'mock PubSub with interceptors',
+      pubsub: new PubsubWithInterceptors({ projectId }),
+      PubSubClass: PubsubWithInterceptors,
     },
   ] as const;
 }

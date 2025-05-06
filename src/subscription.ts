@@ -5,6 +5,7 @@ import {
   makeSubscriptionName,
   libError,
 } from './utils';
+import type { TestOptions, SubscriptionMap } from './types';
 
 export type MockSubscription = Subscription & {
   _queueMessage: (message: Message) => void;
@@ -14,10 +15,12 @@ export function getSubscription({
   projectId,
   subscriptionName,
   subscriptions,
+  testOptions,
 }: {
   projectId: string;
   subscriptionName: string;
-  subscriptions: Map<string, MockSubscription>;
+  subscriptions: SubscriptionMap;
+  testOptions: TestOptions;
 }): Subscription {
   const name = makeSubscriptionName({ projectId, subscriptionName });
   return (
@@ -27,6 +30,7 @@ export function getSubscription({
       name,
       subscriptions,
       registerSubscription: false,
+      testOptions,
     })
   );
 }
@@ -36,11 +40,13 @@ export function createSubscription({
   name,
   subscriptions,
   registerSubscription,
+  testOptions,
 }: {
   projectId: string;
   name: string;
   subscriptions: Map<string, MockSubscription>;
   registerSubscription: boolean;
+  testOptions: TestOptions;
 }): MockSubscription {
   type Listener = (message: Message) => void;
   const listeners: Listener[] = [];
@@ -77,6 +83,14 @@ export function createSubscription({
     },
 
     on(eventName, listener) {
+      if (testOptions?.interceptors?.onSubscription) {
+        testOptions.interceptors.onSubscription({
+          subscription,
+          event: eventName,
+          listener,
+        });
+      }
+
       if (eventName !== 'message') {
         return subscription;
       }
