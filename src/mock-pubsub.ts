@@ -16,7 +16,7 @@ const subscriptions: Map<string, MockSubscription> = new Map();
 // @ts-expect-error partial PubSub implementation
 class PubSub implements RealPubSub {
   projectId: string;
-  _testOptions: TestOptions; // Set by PubSubWithTestOptions class
+  _testOptions: TestOptions; // Set by PubsubWithInterceptors class
 
   constructor(options: Options = {}) {
     const { projectId = '{{projectId}}' } = options;

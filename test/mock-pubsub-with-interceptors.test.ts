@@ -1,6 +1,6 @@
 import waitForExpect from 'wait-for-expect';
 import { type Message } from '@google-cloud/pubsub';
-import { PubSubWithTestOptions } from '../src';
+import { PubsubWithInterceptors } from '../src';
 import {
   clearPubSubInstance,
   makeTestConfig,
@@ -9,12 +9,12 @@ import {
 
 const { projectId } = makeTestConfig();
 
-describe('PubSubWithTestOptions class', () => {
+describe('PubsubWithInterceptors class', () => {
   describe('Test options', () => {
     describe('interceptors.createMessage', () => {
       it('intercepts each message', async () => {
         const createMessageSpy = jest.fn();
-        const pubsub = new PubSubWithTestOptions(
+        const pubsub = new PubsubWithInterceptors(
           { projectId },
           {
             interceptors: {
@@ -55,7 +55,7 @@ describe('PubSubWithTestOptions class', () => {
       });
 
       it('can modify/spy messages', async () => {
-        const pubsub = new PubSubWithTestOptions(
+        const pubsub = new PubsubWithInterceptors(
           { projectId },
           {
             interceptors: {
@@ -99,7 +99,7 @@ describe('PubSubWithTestOptions class', () => {
     describe('interceptors.onSubscription', () => {
       it('intercepts subscription.on invocations', async () => {
         const onSubscriptionSpy = jest.fn();
-        const pubsub = new PubSubWithTestOptions(
+        const pubsub = new PubsubWithInterceptors(
           { projectId },
           {
             interceptors: {
