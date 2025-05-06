@@ -60,7 +60,6 @@ describe('PubsubWithInterceptors class', () => {
           {
             interceptors: {
               createMessage: ({ message }) => {
-                message.ackWithResponse;
                 jest
                   .spyOn(message, 'ackWithResponse')
                   .mockImplementation(async () => 'OTHER');
